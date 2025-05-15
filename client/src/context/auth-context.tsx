@@ -49,13 +49,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     console.log("Setting up auth state change listener");
+    let intervalId: number;
     
     const checkAuthStatus = async () => {
       try {
         console.log("Checking authentication status from server session");
         
         const response = await fetch('/api/auth/user', {
-          credentials: 'include' // Important for sending cookies
+          credentials: 'include', // Important for sending cookies
+          cache: 'no-cache', // Don't cache this request
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
+          }
         });
         
         if (response.ok) {
@@ -64,13 +70,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log("User authenticated from session:", userData);
           setIsEmailVerified(true); // For now, assume email is verified
         } else {
-          // Not authenticated
-          setUser(null);
-          console.log("No authenticated user from session");
+          // Check if we're already logged in but server returned 401
+          if (user && response.status === 401) {
+            console.log("Session expired or invalid, still have user data:", user);
+            // Keep user data for a seamless experience but try to refresh the session
+            // You might want to automatically redirect to login after a timeout
+          } else {
+            // Not authenticated
+            setUser(null);
+            console.log("No authenticated user from session");
+          }
         }
       } catch (error) {
         console.error('Error checking auth status:', error);
-        setUser(null);
+        // Only clear user if we get a network error, not on auth errors (keep local state)
+        if (!navigator.onLine) {
+          setUser(null);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -78,10 +94,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     // Check authentication status immediately
     checkAuthStatus();
-
-    // No cleanup needed since we're not subscribing to anything
-    return () => {};
-  }, []);
+    
+    // Set up periodic check (every 5 minutes)
+    intervalId = window.setInterval(checkAuthStatus, 5 * 60 * 1000);
+    
+    // Route change listener
+    const handleRouteChange = () => {
+      console.log('Route changed, checking auth status');
+      checkAuthStatus();
+    };
+    
+    // Listen for navigation events
+    window.addEventListener('popstate', handleRouteChange);
+    
+    // Clean up on unmount
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange);
+      clearInterval(intervalId);
+    };
+  }, [user]);
 
   const signIn = async (email: string, password: string, rememberMe: boolean = false, userRole: string = 'customer') => {
     try {

@@ -31,6 +31,24 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
     '/api/health'
   ];
   
+  // Special handling for /api/auth/user - it will try to get user but not enforce authentication
+  if (req.path === '/api/auth/user') {
+    try {
+      const userId = req.session?.userId;
+      if (userId) {
+        const user = await storage.getUser(userId);
+        if (user) {
+          req.user = user;
+          console.log(`Special /api/auth/user handler: found user ${user.email}`);
+        }
+      }
+      return next();
+    } catch (error) {
+      console.error('Special auth handler error:', error);
+      return next();
+    }
+  }
+  
   // Allow these routes without authentication
   if (noAuthRoutes.includes(req.path)) {
     return next();

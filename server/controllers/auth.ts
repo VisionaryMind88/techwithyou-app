@@ -250,15 +250,38 @@ export function registerAuthRoutes(app: Express) {
   // Get current user
   app.get("/api/auth/user", async (req: AuthRequest, res: Response) => {
     try {
+      console.log('GET /api/auth/user route accessed, session details:', {
+        sessionExists: !!req.session,
+        sessionId: req.sessionID,
+        sessionUserId: req.session?.userId,
+        hasUser: !!req.user
+      });
+      
+      // Try to get user directly from session if req.user is not set
+      if (!req.user && req.session?.userId) {
+        console.log(`No req.user but found userId ${req.session.userId} in session, looking up...`);
+        const sessionUser = await storage.getUser(req.session.userId);
+        if (sessionUser) {
+          console.log('Found user via session userId:', sessionUser.email);
+          req.user = sessionUser;
+        } else {
+          console.log('No user found for session userId:', req.session.userId);
+        }
+      }
+      
       if (!req.user || !req.user.id) {
+        console.log('User not authenticated, no valid user in request or session');
         return res.status(401).json({ message: 'Not authenticated' });
       }
       
       const user = await storage.getUser(req.user.id);
       
       if (!user) {
+        console.log(`User with id ${req.user.id} not found in database`);
         return res.status(404).json({ message: 'User not found' });
       }
+      
+      console.log(`User authenticated successfully: ${user.email}`);
       
       // Return user without password
       const { password, ...userWithoutPassword } = user;

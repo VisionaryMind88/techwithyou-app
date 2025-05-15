@@ -23,13 +23,16 @@ app.use(
       createTableIfMissing: true,
     }),
     secret: process.env.SESSION_SECRET || 'tech-with-you-secret',
-    resave: true,
-    saveUninitialized: true,
+    resave: false, // Only save session when modified
+    rolling: true, // Reset expiration on activity
+    saveUninitialized: false, // Don't create session until something stored
+    name: 'techwithyou.sid', // Custom cookie name
     cookie: { 
       secure: false, // Set to false even in production for testing
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
-      sameSite: 'lax'
+      sameSite: 'lax',
+      path: '/'
     }
   })
 );
