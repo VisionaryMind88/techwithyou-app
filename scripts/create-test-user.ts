@@ -1,5 +1,6 @@
 import { db } from "../server/db";
 import { users } from "../shared/schema";
+import { eq } from "drizzle-orm";
 
 async function main() {
   console.log("Creating test user...");
@@ -16,12 +17,12 @@ async function main() {
   const result = await db.insert(users).values({
     email: "test@techwithyou.com",
     password: "$2b$10$cGXu4qxeYgYl/iJ03HzI7.uAJF1oiuX8u7GYHF8cDsOB20G3cbXza", // hashed "password123"
-    first_name: "Test",
-    last_name: "User",
+    firstName: "Test",
+    lastName: "User",
     role: "admin", // make this user an admin for testing
     provider: null,
-    provider_id: null,
-    created_at: new Date(),
+    providerId: null,
+    createdAt: new Date(),
   }).returning();
 
   console.log("Test user created:", result[0]);
