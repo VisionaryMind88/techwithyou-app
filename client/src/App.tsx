@@ -8,8 +8,7 @@ import AuthPage from "@/pages/auth";
 import CustomerDashboard from "@/pages/customer-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
 import ProjectDetail from "@/pages/project-detail";
-import { useMockAuth } from "./context/mock-auth-context";
-import { useEffect } from "react";
+import { useMockAuth, MockAuthProvider } from "./context/mock-auth-context";
 import { ThemeProvider } from "next-themes";
 
 function Router() {
@@ -48,14 +47,16 @@ function Router() {
 
 function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="light">
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <MockAuthProvider>
+      <ThemeProvider attribute="class" defaultTheme="light">
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </MockAuthProvider>
   );
 }
 

@@ -1,5 +1,6 @@
-import { Home, FolderOpen, MessageSquare, Settings, LogOut } from "lucide-react";
+import { Home, FolderOpen, MessageSquare, Settings, LogOut, X } from "lucide-react";
 import { useMockAuth } from "@/context/mock-auth-context";
+import { Logo } from "@/components/logo";
 
 interface SidebarProps {
   isMobile?: boolean;
@@ -23,27 +24,14 @@ export function Sidebar({ isMobile = false, onClose }: SidebarProps) {
     <div className="w-64 h-full bg-white shadow-lg">
       {/* Logo and Header */}
       <div className="h-16 flex items-center px-6 border-b">
-        <h1 className="text-xl font-bold text-primary-700">SecureApp</h1>
+        <Logo size="md" />
         
         {isMobile && onClose && (
           <button 
             className="ml-auto text-gray-500 hover:text-gray-700"
             onClick={onClose}
           >
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className="h-6 w-6" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M6 18L18 6M6 6l12 12" 
-              />
-            </svg>
+            <X className="h-6 w-6" />
           </button>
         )}
       </div>

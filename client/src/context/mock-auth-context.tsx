@@ -1,16 +1,15 @@
-import React, { createContext, useContext, useState } from "react";
-import { type User } from "@shared/schema";
+import React, { createContext, useState, useContext, useCallback } from "react";
+import { User } from "@shared/schema";
 
-// Create a simple mock user
 const mockUser: User = {
   id: 1,
   email: "user@example.com",
   firstName: "Demo",
   lastName: "User",
-  password: null,
   role: "customer",
-  provider: "local",
-  providerId: "mock-provider-id",
+  password: null,
+  provider: null,
+  providerId: null,
   createdAt: new Date()
 };
 
@@ -25,44 +24,69 @@ interface AuthContextType {
   logout: () => void;
 }
 
-// Create the context with default values
-const MockAuthContext = createContext<AuthContextType>({
-  user: null,
-  isAuthenticated: false,
-  isLoading: false,
-  signIn: () => {},
-  signUp: () => {},
-  signInWithGoogle: () => {},
-  signInWithGitHub: () => {},
-  logout: () => {}
-});
+const MockAuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
-  const login = () => {
-    setUser(mockUser);
-  };
-
-  const logout = () => {
+  
+  const signIn = useCallback(() => {
+    setIsLoading(true);
+    
+    // Simulate API delay
+    setTimeout(() => {
+      setUser(mockUser);
+      setIsLoading(false);
+    }, 1000);
+  }, []);
+  
+  const signUp = useCallback(() => {
+    setIsLoading(true);
+    
+    // Simulate API delay
+    setTimeout(() => {
+      setUser(mockUser);
+      setIsLoading(false);
+    }, 1000);
+  }, []);
+  
+  const signInWithGoogle = useCallback(() => {
+    setIsLoading(true);
+    
+    // Simulate API delay
+    setTimeout(() => {
+      setUser(mockUser);
+      setIsLoading(false);
+    }, 1000);
+  }, []);
+  
+  const signInWithGitHub = useCallback(() => {
+    setIsLoading(true);
+    
+    // Simulate API delay
+    setTimeout(() => {
+      setUser(mockUser);
+      setIsLoading(false);
+    }, 1000);
+  }, []);
+  
+  const logout = useCallback(() => {
     setUser(null);
-  };
-
-  // Create the context value
+  }, []);
+  
+  console.log("Mock Auth Context:", user ? user : "Not authenticated");
+  
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
     isLoading,
-    signIn: login,
-    signUp: login,
-    signInWithGoogle: login,
-    signInWithGitHub: login,
+    signIn,
+    signUp,
+    signInWithGoogle,
+    signInWithGitHub,
     logout
   };
-
-  console.log("Mock Auth Context:", { user: user ? "Authenticated" : "Not authenticated" });
-
+  
   return (
     <MockAuthContext.Provider value={value}>
       {children}
@@ -71,5 +95,11 @@ export const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 };
 
 export const useMockAuth = () => {
-  return useContext(MockAuthContext);
+  const context = useContext(MockAuthContext);
+  
+  if (context === undefined) {
+    throw new Error("useMockAuth must be used within a MockAuthProvider");
+  }
+  
+  return context;
 };

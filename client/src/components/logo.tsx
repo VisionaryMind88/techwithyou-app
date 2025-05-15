@@ -11,22 +11,22 @@ export function Logo({
   size = "md", 
   variant = "normal" 
 }: LogoProps) {
+  // Size mapping
   const sizeClasses = {
-    sm: "h-8 w-32",
-    md: "h-10 w-36", 
-    lg: "h-12 w-40"
+    sm: "text-xl",
+    md: "text-2xl",
+    lg: "text-3xl",
   };
-
+  
+  // Color mapping
   const colorClasses = {
-    normal: "bg-white text-primary-800",
-    inverted: "bg-primary-800 text-white"
+    normal: "text-[#4aaee8]", // The blue color from the logo
+    inverted: "text-white",
   };
-
+  
   return (
-    <div 
-      className={`${sizeClasses[size]} ${colorClasses[variant]} rounded-md flex items-center justify-center font-bold ${className}`}
-    >
-      COMPANY LOGO
+    <div className={`font-bold ${sizeClasses[size]} ${colorClasses[variant]} ${className}`}>
+      TechWithYou
     </div>
   );
 }
