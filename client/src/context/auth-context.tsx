@@ -50,92 +50,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     console.log("Setting up auth state change listener");
     
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const checkAuthStatus = async () => {
       try {
-        console.log("Auth state changed:", firebaseUser ? "User logged in" : "No user");
+        console.log("Checking authentication status from server session");
         
-        if (firebaseUser) {
-          // For demo purposes, create a mock user while we debug
-          const mockUser: User = {
-            id: 1, 
-            email: firebaseUser.email || 'demo@example.com',
-            firstName: firebaseUser.displayName?.split(' ')[0] || 'Demo',
-            lastName: firebaseUser.displayName?.split(' ').slice(1).join(' ') || 'User',
-            password: null,
-            role: 'customer',
-            provider: 'firebase',
-            providerId: firebaseUser.uid,
-            rememberToken: null,
-            createdAt: new Date()
-          };
-          
-          setUser(mockUser);
-          console.log("Set mock user:", mockUser);
-          
-          // We'll implement the API call later
-          // Get the real user data from API
-          try {
-            const response = await fetch(`/api/auth/user?email=${encodeURIComponent(firebaseUser.email || '')}`);
-            
-            if (response.ok) {
-              const userData = await response.json();
-              setUser(userData);
-              console.log("API user data:", userData);
-            } else {
-              // If we don't have the user in our DB yet, create them
-              if (response.status === 404) {
-                const newUser = {
-                  email: firebaseUser.email,
-                  firstName: firebaseUser.displayName?.split(' ')[0] || '',
-                  lastName: firebaseUser.displayName?.split(' ').slice(1).join(' ') || '',
-                  provider: firebaseUser.providerData[0]?.providerId || 'firebase',
-                  providerId: firebaseUser.uid,
-                  role: 'customer' // Default role
-                };
-                
-                console.log("Creating new user in DB:", newUser);
-                
-                try {
-                  const createResponse = await fetch('/api/auth/register', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(newUser),
-                    credentials: 'include'
-                  });
-                  
-                  if (createResponse.ok) {
-                    const createdUser = await createResponse.json();
-                    setUser(createdUser);
-                    console.log("User created:", createdUser);
-                  } else {
-                    console.error('Failed to create user in database');
-                    // Keep the mock user for now
-                  }
-                } catch (error) {
-                  console.error('Error creating user:', error);
-                  // Keep the mock user for now
-                }
-              }
-            }
-          } catch (error) {
-            console.error('Error fetching user data:', error);
-            // Keep the mock user for now
-          }
+        const response = await fetch('/api/auth/user', {
+          credentials: 'include' // Important for sending cookies
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+          console.log("User authenticated from session:", userData);
+          setIsEmailVerified(true); // For now, assume email is verified
         } else {
-          // User is signed out
+          // Not authenticated
           setUser(null);
+          console.log("No authenticated user from session");
         }
       } catch (error) {
-        console.error('Auth state change error:', error);
+        console.error('Error checking auth status:', error);
         setUser(null);
       } finally {
         setIsLoading(false);
       }
-    });
+    };
+    
+    // Check authentication status immediately
+    checkAuthStatus();
 
-    return () => unsubscribe();
+    // No cleanup needed since we're not subscribing to anything
+    return () => {};
   }, []);
 
   const signIn = async (email: string, password: string, rememberMe: boolean = false, userRole: string = 'customer') => {
@@ -188,17 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       console.log("Signing up with email:", email, "Role:", role);
       
-      // Create the user in Firebase
-      const userCredential = await firebaseCreateUser(email, password);
-      
-      // Update profile with name if provided
-      if (firstName && userCredential.user) {
-        await updateUserProfile(`${firstName} ${lastName || ''}`);
-      }
-      
-      console.log("User created in Firebase, now registering with server");
-      
-      // Now register with our server for role-based auth and session management
+      // Register directly with our server for local authentication
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
@@ -210,8 +145,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           firstName: firstName || null,
           lastName: lastName || null,
           role, // Use the provided role or default to customer
-          provider: 'firebase', // Indicate this is a Firebase-authenticated user
-          providerId: userCredential.user.uid,
+          provider: 'local', // Use local authentication
+          providerId: null,
           rememberToken: null
         }),
         credentials: 'include'
@@ -223,18 +158,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       const userData = await response.json();
-      setUser(userData);
+      
+      // After successful registration, log the user in
+      await signIn(email, password, false, role);
       
       console.log("Registration successful:", userData);
-      
-      // The user state will be updated by the onAuthStateChanged listener and the server response
-      
     } catch (error: any) {
       console.error('Sign up error:', error);
       
-      const errorMessage = error.code === 'auth/email-already-in-use'
-        ? 'Email is already in use. Please login instead.'
-        : error.message || 'Failed to create account. Please try again.';
+      const errorMessage = error.message || 'Failed to create account. Please try again.';
       
       toast({
         title: "Registration Error",
@@ -290,8 +222,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setIsLoading(true);
       console.log("Logging out");
-      await logOut();
+      
+      // Call our API endpoint to logout (destroys session)
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to logout from server');
+      }
+      
+      // Clear user state
       setUser(null);
+      setIsEmailVerified(false);
+      setIs2FAEnabled(false);
     } catch (error: any) {
       console.error('Logout error:', error);
       toast({
