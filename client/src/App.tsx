@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth";
+import DirectLoginPage from "@/pages/direct-login";
 import CustomerDashboard from "@/pages/customer-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
 import ProjectDetail from "@/pages/project-detail";
