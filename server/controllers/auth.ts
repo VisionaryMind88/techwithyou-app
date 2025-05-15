@@ -160,6 +160,20 @@ export function registerAuthRoutes(app: Express) {
         }
       }
       
+      // Generate remember token if requested
+      let rememberToken = null;
+      if (rememberMe) {
+        // Generate a secure random token
+        const crypto = require('crypto');
+        rememberToken = crypto.randomBytes(64).toString('hex');
+        
+        // Save token to user record
+        await storage.updateUser(user.id, { rememberToken });
+        
+        // Set longer session expiration (30 days)
+        req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
+      }
+      
       // Set user ID in session
       req.session.userId = user.id;
       
@@ -169,12 +183,19 @@ export function registerAuthRoutes(app: Express) {
         description: `User logged in (${user.role})`,
         userId: user.id,
         projectId: null,
-        metadata: null,
+        metadata: { rememberMe, role: user.role },
       });
       
       // Return user without password
       const { password: _, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
+      
+      // Add remember token to response if generated
+      const responseData = { ...userWithoutPassword };
+      if (rememberToken) {
+        responseData.rememberToken = rememberToken;
+      }
+      
+      res.json(responseData);
     } catch (error) {
       console.error('Login error:', error);
       res.status(500).json({ message: 'Internal server error' });

@@ -37,27 +37,61 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
   }
 
   try {
-    // Check for user in session
+    // First check for user in session
     const userId = req.session?.userId;
     
-    if (!userId) {
-      return res.status(401).json({ message: 'Authentication required' });
+    if (userId) {
+      // Find user in the database
+      const user = await storage.getUser(userId);
+      
+      if (user) {
+        // Attach user to request
+        req.user = user;
+        next();
+        return;
+      } else {
+        // If user not found, clear the session
+        req.session.destroy((err: Error) => {
+          if (err) console.error('Error destroying session:', err);
+        });
+      }
     }
-
-    // Find user in the database
-    const user = await storage.getUser(userId);
     
-    if (!user) {
-      // If user not found, clear the session
-      req.session.destroy((err: Error) => {
-        if (err) console.error('Error destroying session:', err);
-      });
-      return res.status(401).json({ message: 'User not found' });
+    // If no valid session, check for remember me token in cookies
+    const rememberToken = req.cookies?.remember_token;
+    
+    if (rememberToken) {
+      // Find user with this remember token
+      const users = await storage.getUserByRememberToken(rememberToken);
+      
+      if (users && users.length > 0) {
+        const user = users[0];
+        
+        // Create a new session for the user
+        req.session.userId = user.id;
+        
+        // Set a long expiration (30 days)
+        req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
+        
+        // Attach user to request
+        req.user = user;
+        
+        // Log this auto-login activity
+        await storage.createActivity({
+          type: 'auto_login',
+          description: `User auto-logged in via remember token (${user.role})`,
+          userId: user.id,
+          projectId: null,
+          metadata: { method: 'remember_token' },
+        });
+        
+        next();
+        return;
+      }
     }
-
-    // Attach user to request
-    req.user = user;
-    next();
+    
+    // No session and no valid remember token
+    return res.status(401).json({ message: 'Authentication required' });
   } catch (error) {
     console.error('Auth middleware error:', error);
     res.status(500).json({ message: 'Internal server error' });
