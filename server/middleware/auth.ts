@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { storage } from "../storage";
 import { Session } from "express-session";
+import { User } from "@shared/schema";
 
 // Extend express-session to include our custom properties
 declare module "express-session" {
@@ -11,9 +12,10 @@ declare module "express-session" {
 
 // Extended Request interface to include user property and session data
 export interface AuthRequest extends Request {
-  user?: any;
+  user?: User;
   session: Session & {
     userId?: number;
+    destroy(callback: (err: Error) => void): void;
   };
 }
 
@@ -24,6 +26,8 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
     '/api/auth/login',
     '/api/auth/register',
     '/api/auth/check-email',
+    '/api/auth/google-callback',
+    '/api/auth/github-callback',
     '/api/health'
   ];
   
@@ -45,7 +49,7 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
     
     if (!user) {
       // If user not found, clear the session
-      req.session.destroy((err) => {
+      req.session.destroy((err: Error) => {
         if (err) console.error('Error destroying session:', err);
       });
       return res.status(401).json({ message: 'User not found' });

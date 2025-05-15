@@ -7,6 +7,50 @@ import { AuthRequest } from "../middleware/auth";
 // Extend express-session
 import "express-session";
 
+// Helper function to find or create user from OAuth profile
+async function findOrCreateUserFromOAuth(profile: {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  provider: string;
+  providerId: string;
+}) {
+  // Check if user exists with this email
+  let user = await storage.getUserByEmail(profile.email);
+  
+  if (user) {
+    // Update provider info if the user exists but hasn't used this provider before
+    if (user.provider !== profile.provider || user.providerId !== profile.providerId) {
+      user = await storage.updateUser(user.id, {
+        provider: profile.provider,
+        providerId: profile.providerId
+      });
+    }
+  } else {
+    // Create new user
+    user = await storage.createUser({
+      email: profile.email,
+      firstName: profile.firstName || null,
+      lastName: profile.lastName || null,
+      password: null, // No password for OAuth users
+      role: 'customer', // Default role for new users
+      provider: profile.provider,
+      providerId: profile.providerId,
+    });
+    
+    // Create activity for new user registration
+    await storage.createActivity({
+      type: 'user_registered',
+      description: `User registered via ${profile.provider}`,
+      userId: user.id,
+      projectId: null,
+      metadata: null
+    });
+  }
+  
+  return user;
+}
+
 export function registerAuthRoutes(app: Express) {
   // Check if email exists
   app.get("/api/auth/check-email", async (req: Request, res: Response) => {
@@ -155,7 +199,7 @@ export function registerAuthRoutes(app: Express) {
       }
       
       // Destroy session
-      req.session.destroy((err) => {
+      req.session.destroy((err: Error) => {
         if (err) {
           console.error('Error destroying session:', err);
           return res.status(500).json({ message: 'Internal server error' });
