@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -48,40 +48,61 @@ function AuthRedirectHandler() {
 
 function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
+  const [location] = useLocation();
 
-  console.log("Router: Auth state =", { user, isAuthenticated, isLoading });
+  console.log("Router: Auth state =", { user, isAuthenticated, isLoading, currentPath: location });
 
-  // If still loading, show nothing (could add a loading spinner here)
+  // If still loading, show skeleton/loading screen
   if (isLoading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
+        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="mt-4 text-gray-600">Loading your session...</p>
+      </div>
+    );
   }
 
+  // Direct login is always accessible
+  if (location === '/direct-login') {
+    return <DirectLoginPage />;
+  }
+
+  // If not authenticated, redirect to auth page
+  if (!isAuthenticated) {
+    return (
+      <Switch>
+        <Route path="*" component={AuthPage} />
+      </Switch>
+    );
+  }
+
+  // User is authenticated at this point
+  if (user?.role === "customer") {
+    return (
+      <Switch>
+        <Route path="/" component={CustomerDashboard} />
+        <Route path="/project/:id" component={ProjectDetail} />
+        <Route component={NotFound} />
+      </Switch>
+    );
+  }
+  
+  if (user?.role === "admin") {
+    return (
+      <Switch>
+        <Route path="/" component={AdminDashboard} />
+        <Route path="/project/:id" component={ProjectDetail} />
+        <Route component={NotFound} />
+      </Switch>
+    );
+  }
+  
+  // Fallback if authenticated but role is unknown
   return (
-    <Switch>
-      {!isAuthenticated && (
-        <>
-          <Route path="/direct-login" component={DirectLoginPage} />
-          <Route path="*" component={AuthPage} />
-        </>
-      )}
-      
-      {isAuthenticated && user?.role === "customer" && (
-        <>
-          <Route path="/" component={CustomerDashboard} />
-          <Route path="/project/:id" component={ProjectDetail} />
-        </>
-      )}
-      
-      {isAuthenticated && user?.role === "admin" && (
-        <>
-          <Route path="/" component={AdminDashboard} />
-          <Route path="/project/:id" component={ProjectDetail} />
-        </>
-      )}
-      
-      {/* Fallback to 404 */}
-      <Route component={NotFound} />
-    </Switch>
+    <div className="flex flex-col items-center justify-center h-screen">
+      <h1 className="text-2xl font-bold mb-4">Access Error</h1>
+      <p className="text-gray-600">Your role ({user?.role || 'unknown'}) doesn't have access to this application.</p>
+    </div>
   );
 }
 

@@ -306,6 +306,19 @@ export function registerAuthRoutes(app: Express) {
         });
       }
       
+      // Log session info before destroying
+      console.log('Attempting to log out user, session info:', {
+        sessionId: req.sessionID,
+        userId: req.session?.userId
+      });
+      
+      // Clear userId from session first
+      req.session.userId = undefined;
+      
+      // Clear any cookies
+      res.clearCookie('remember_token');
+      res.clearCookie('techwithyou.sid');
+      
       // Destroy session
       req.session.destroy((err: Error) => {
         if (err) {
@@ -313,6 +326,7 @@ export function registerAuthRoutes(app: Express) {
           return res.status(500).json({ message: 'Internal server error' });
         }
         
+        console.log('Session destroyed successfully');
         res.json({ message: 'Logged out successfully' });
       });
     } catch (error) {
