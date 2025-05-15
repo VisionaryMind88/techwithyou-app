@@ -1,5 +1,5 @@
 import { Home, FolderOpen, MessageSquare, Settings, LogOut, X } from "lucide-react";
-import { useMockAuth } from "@/context/mock-auth-context";
+import { useAuth } from "@/context/auth-context";
 import { Logo } from "@/components/logo";
 
 interface SidebarProps {
@@ -8,7 +8,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isMobile = false, onClose }: SidebarProps) {
-  const { user, logout } = useMockAuth();
+  const { user, logout } = useAuth();
   
   const handleLogout = () => {
     logout();
