@@ -5,11 +5,16 @@ import * as schema from "@shared/schema";
 
 neonConfig.webSocketConstructor = ws;
 
-if (!process.env.DATABASE_URL) {
+// Check for all required PG environment variables
+if (!process.env.PGHOST || !process.env.PGPORT || !process.env.PGUSER || 
+    !process.env.PGPASSWORD || !process.env.PGDATABASE) {
   throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
+    "PostgreSQL environment variables must be set. Did you forget to provision a database?",
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// Construct connection string using PG environment variables
+const connectionString = `postgresql://${process.env.PGUSER}:${process.env.PGPASSWORD}@${process.env.PGHOST}:${process.env.PGPORT}/${process.env.PGDATABASE}`;
+
+export const pool = new Pool({ connectionString });
 export const db = drizzle({ client: pool, schema });
