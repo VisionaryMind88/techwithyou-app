@@ -203,8 +203,24 @@ export function registerAuthRoutes(app: Express) {
         req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
       }
       
-      // Set user ID in session
+      // Set user ID in session and ensure it's saved
       req.session.userId = user.id;
+      
+      // Force session save before responding
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) {
+            console.error('Session save error:', err);
+            reject(err);
+          } else {
+            console.log('Session saved successfully. Session data:', { 
+              userId: req.session.userId,
+              sessionId: req.sessionID 
+            });
+            resolve();
+          }
+        });
+      });
       
       // Create activity record for login
       await storage.createActivity({

@@ -37,20 +37,34 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
   }
 
   try {
+    // Debug auth info
+    console.log('Auth middleware debug:', {
+      path: req.path,
+      sessionId: req.sessionID,
+      sessionExists: !!req.session,
+      userId: req.session?.userId,
+      reqUser: !!req.user
+    });
+    
     // First check for user in session
     const userId = req.session?.userId;
     
     if (userId) {
+      console.log(`Found userId ${userId} in session, fetching user...`);
+      
       // Find user in the database
       const user = await storage.getUser(userId);
+      console.log('Database lookup result:', user ? `Found user ${user.email}` : 'User not found');
       
       if (user) {
         // Attach user to request
         req.user = user;
+        console.log('User attached to request');
         next();
         return;
       } else {
         // If user not found, clear the session
+        console.log('User not found in database despite having userId in session');
         req.session.destroy((err: Error) => {
           if (err) console.error('Error destroying session:', err);
         });

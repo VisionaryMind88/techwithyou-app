@@ -1,6 +1,7 @@
 import { Home, FolderOpen, MessageSquare, Settings, LogOut, X } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { Logo } from "@/components/logo";
+import { Link, useLocation } from "wouter";
 
 interface SidebarProps {
   isMobile?: boolean;
@@ -53,40 +54,40 @@ export function Sidebar({ isMobile = false, onClose }: SidebarProps) {
       <nav className="p-4">
         <ul className="space-y-2">
           <li>
-            <a 
-              href="/" 
+            <Link 
+              to="/" 
               className="flex items-center p-2 rounded-md hover:bg-gray-100 text-gray-700"
             >
               <Home className="h-5 w-5 mr-3" />
               Dashboard
-            </a>
+            </Link>
           </li>
           <li>
-            <a 
-              href="/projects" 
+            <Link 
+              to="/projects" 
               className="flex items-center p-2 rounded-md hover:bg-gray-100 text-gray-700"
             >
               <FolderOpen className="h-5 w-5 mr-3" />
               Projects
-            </a>
+            </Link>
           </li>
           <li>
-            <a 
-              href="/messages" 
+            <Link 
+              to="/messages" 
               className="flex items-center p-2 rounded-md hover:bg-gray-100 text-gray-700"
             >
               <MessageSquare className="h-5 w-5 mr-3" />
               Messages
-            </a>
+            </Link>
           </li>
           <li>
-            <a 
-              href="/settings" 
+            <Link 
+              to="/settings" 
               className="flex items-center p-2 rounded-md hover:bg-gray-100 text-gray-700"
             >
               <Settings className="h-5 w-5 mr-3" />
               Settings
-            </a>
+            </Link>
           </li>
         </ul>
       </nav>
