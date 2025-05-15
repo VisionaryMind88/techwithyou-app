@@ -174,10 +174,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
+  const signUp = async (email: string, password: string, firstName?: string, lastName?: string, role: string = 'customer') => {
     try {
       setIsLoading(true);
-      console.log("Signing up with email:", email);
+      console.log("Signing up with email:", email, "Role:", role);
       
       // Create the user in Firebase
       const userCredential = await firebaseCreateUser(email, password);
@@ -187,9 +187,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await updateUserProfile(`${firstName} ${lastName || ''}`);
       }
       
-      console.log("User created in Firebase, now creating in database");
+      console.log("User created in Firebase, now registering with server");
       
-      // The user state will be updated by the onAuthStateChanged listener
+      // Now register with our server for role-based auth and session management
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email,
+          password, // Will be hashed by the server
+          firstName: firstName || null,
+          lastName: lastName || null,
+          role, // Use the provided role or default to customer
+          provider: 'firebase', // Indicate this is a Firebase-authenticated user
+          providerId: userCredential.user.uid,
+          rememberToken: null
+        }),
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to register with server');
+      }
+      
+      const userData = await response.json();
+      setUser(userData);
+      
+      console.log("Registration successful:", userData);
+      
+      // The user state will be updated by the onAuthStateChanged listener and the server response
       
     } catch (error: any) {
       console.error('Sign up error:', error);

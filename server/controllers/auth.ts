@@ -52,7 +52,7 @@ async function findOrCreateUserFromOAuth(profile: {
 }
 
 export function registerAuthRoutes(app: Express) {
-  // Check if email exists
+  // Check if email exists and return user role for login form
   app.get("/api/auth/check-email", async (req: Request, res: Response) => {
     try {
       const { email } = req.query;
@@ -63,7 +63,14 @@ export function registerAuthRoutes(app: Express) {
       
       const user = await storage.getUserByEmail(email);
       
-      res.json({ exists: !!user });
+      if (user) {
+        res.json({ 
+          exists: true, 
+          role: user.role 
+        });
+      } else {
+        res.json({ exists: false });
+      }
     } catch (error) {
       console.error('Check email error:', error);
       res.status(500).json({ message: 'Internal server error' });
@@ -113,10 +120,15 @@ export function registerAuthRoutes(app: Express) {
   // Login user
   app.post("/api/auth/login", async (req: AuthRequest, res: Response) => {
     try {
-      const { email, password } = req.body;
+      const { email, password, rememberMe = false, userRole } = req.body;
       
       // Validate login data
-      const validationResult = loginUserSchema.safeParse({ email, password });
+      const validationResult = loginUserSchema.safeParse({ 
+        email, 
+        password, 
+        rememberMe, 
+        userRole 
+      });
       
       if (!validationResult.success) {
         return res.status(400).json({ 
@@ -130,6 +142,13 @@ export function registerAuthRoutes(app: Express) {
       
       if (!user) {
         return res.status(401).json({ message: 'Invalid email or password' });
+      }
+      
+      // Check if user role matches requested role
+      if (userRole && user.role !== userRole) {
+        return res.status(403).json({ 
+          message: `This account is registered as a ${user.role}, not as a ${userRole}.` 
+        });
       }
       
       // Check password (if using local auth)
