@@ -307,12 +307,12 @@ export default function CustomerDashboard() {
                           <div>
                             <div className="font-medium">{message.sender.firstName} {message.sender.lastName}</div>
                             <div className="text-sm text-gray-500">
-                              {new Date(message.createdAt).toLocaleDateString()} - Project: {
+                              {new Date(message.createdAt || Date.now()).toLocaleDateString()} - Project: {
                                 (projects.find(p => p.id === message.projectId)?.name) || 'Unknown'
                               }
                             </div>
                             <p className="mt-2">{message.content}</p>
-                            {message.attachments && (
+                            {typeof message.attachments === 'string' && (
                               <div className="mt-2 flex items-center text-sm text-blue-600">
                                 <Paperclip className="h-3.5 w-3.5 mr-1" />
                                 <span>Attachment</span>
