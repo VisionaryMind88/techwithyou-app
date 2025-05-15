@@ -23,14 +23,30 @@ app.use(
       createTableIfMissing: true,
     }),
     secret: process.env.SESSION_SECRET || 'tech-with-you-secret',
-    resave: false,
-    saveUninitialized: false,
+    resave: true,
+    saveUninitialized: true,
     cookie: { 
-      secure: process.env.NODE_ENV === 'production',
+      secure: false, // Set to false even in production for testing
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      httpOnly: true,
+      sameSite: 'lax'
     }
   })
 );
+
+// Debug middleware for session
+app.use((req: any, res, next) => {
+  if (req.path === '/api/auth/user' || req.path === '/api/auth/login') {
+    console.log('Session check:', {
+      path: req.path,
+      sessionId: req.sessionID,
+      hasSession: !!req.session,
+      userId: req.session?.userId,
+      cookie: req.session?.cookie
+    });
+  }
+  next();
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
