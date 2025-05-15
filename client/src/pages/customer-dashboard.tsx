@@ -3,102 +3,82 @@ import { useQuery } from "@tanstack/react-query";
 import { Sidebar } from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plus, Menu, Bell } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Plus, Menu, Bell, FileText, MessageSquare, Paperclip } from "lucide-react";
 import { Project, Message, User } from "@shared/schema";
-import { useMockAuth } from "@/context/mock-auth-context";
-
-// Mock data for development
-const mockProjects: Project[] = [
-  {
-    id: 1,
-    name: "Website Redesign",
-    type: "Web Development",
-    description: "Complete overhaul of company website with modern design",
-    status: "in-progress",
-    budget: "5000",
-    targetDate: "2025-06-30",
-    userId: 1,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    id: 2,
-    name: "Mobile App Development",
-    type: "Mobile Development",
-    description: "New mobile app for customer engagement",
-    status: "pending",
-    budget: "8000",
-    targetDate: "2025-07-15",
-    userId: 1,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  },
-  {
-    id: 3,
-    name: "Brand Identity Update",
-    type: "Design",
-    description: "Refresh company brand identity including logo and visual elements",
-    status: "completed",
-    budget: "3000",
-    targetDate: "2025-05-10",
-    userId: 1,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
-];
-
-const mockMessages: (Message & { sender: User })[] = [
-  {
-    id: 1,
-    content: "The initial mockups for the website redesign are now available for review.",
-    projectId: 1,
-    senderId: 2,
-    isRead: false,
-    attachments: null,
-    createdAt: new Date(),
-    sender: {
-      id: 2,
-      email: "admin@example.com",
-      firstName: "Admin",
-      lastName: "User",
-      role: "admin",
-      password: null,
-      provider: "local",
-      providerId: null,
-      createdAt: new Date()
-    }
-  },
-  {
-    id: 2,
-    content: "Please provide feedback on the mobile app wireframes by Friday.",
-    projectId: 2,
-    senderId: 2,
-    isRead: false,
-    attachments: null,
-    createdAt: new Date(Date.now() - 86400000), // 1 day ago
-    sender: {
-      id: 2,
-      email: "admin@example.com",
-      firstName: "Admin",
-      lastName: "User",
-      role: "admin",
-      password: null,
-      provider: "local",
-      providerId: null,
-      createdAt: new Date()
-    }
-  }
-];
+import { useAuth } from "@/context/auth-context";
+import { OnboardingTour, customerTourSteps } from "@/components/onboarding-tour";
+import { ProjectForm } from "@/components/project-form";
+import { ChatModule } from "@/components/chat-module";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function CustomerDashboard() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const { user } = useMockAuth();
+  const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<{id: number, name: string} | null>(null);
+  const [showTour, setShowTour] = useState(false);
+  const { user } = useAuth();
   
   console.log("CustomerDashboard: User =", user);
 
-  // For demo purposes, using mock data
-  const projects = mockProjects;
-  const messages = mockMessages;
+  // Check if onboarding tour should be shown
+  useEffect(() => {
+    const hasCompletedTour = localStorage.getItem('onboarding-tour-completed-customer');
+    if (!hasCompletedTour && user) {
+      setShowTour(true);
+    }
+  }, [user]);
+
+  // Fetch user's projects
+  const { 
+    data: projects = [],
+    isLoading: isLoadingProjects 
+  } = useQuery<Project[]>({
+    queryKey: ['/api/projects/user'],
+    enabled: !!user?.id && user?.role === "customer"
+  });
+
+  // Fetch user's messages
+  const { 
+    data: messages = [],
+    isLoading: isLoadingMessages 
+  } = useQuery<Array<Message & { sender: User }>>({
+    queryKey: ['/api/messages/recent'],
+    enabled: !!user?.id && user?.role === "customer"
+  });
+
+  // Project handling
+  const handleOpenProjectForm = () => {
+    setIsProjectFormOpen(true);
+  };
+
+  const handleOpenChat = (projectId: number, projectName: string) => {
+    setSelectedProject({ id: projectId, name: projectName });
+    setIsChatOpen(true);
+  };
+
+  // Project status styles
+  const getStatusStyles = (status: string) => {
+    switch (status) {
+      case 'pending':
+      case 'pending_approval':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'in_progress':
+      case 'in-progress':
+        return 'bg-blue-100 text-blue-800';
+      case 'completed':
+        return 'bg-green-100 text-green-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const formatStatus = (status: string) => {
+    return status.replace(/_/g, ' ').replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -133,12 +113,17 @@ export default function CustomerDashboard() {
                 <Menu className="h-6 w-6 text-gray-600" />
               </button>
               
-              <h1 className="text-xl font-semibold text-gray-800 md:ml-2">Dashboard</h1>
+              <h1 className="text-xl font-semibold text-gray-800 md:ml-2">Customer Dashboard</h1>
               
               {/* Right Nav Elements */}
               <div className="flex items-center space-x-4">
-                <button className="text-gray-500 hover:text-gray-700 focus:outline-none">
+                <button className="text-gray-500 hover:text-gray-700 focus:outline-none relative">
                   <Bell className="h-5 w-5" />
+                  {messages.filter(m => !m.isRead).length > 0 && (
+                    <span className="absolute top-0 right-0 -mt-1 -mr-1 px-1.5 py-0.5 text-xs font-medium bg-red-500 text-white rounded-full">
+                      {messages.filter(m => !m.isRead).length}
+                    </span>
+                  )}
                 </button>
               </div>
             </div>
@@ -147,28 +132,70 @@ export default function CustomerDashboard() {
           {/* Page Content */}
           <div className="px-4 py-6 md:px-6 pb-16">
             {/* Welcome Banner */}
-            <Card className="mb-6 p-6" id="customer-dashboard-welcome">
+            <Card className="mb-6 p-6 bg-gradient-to-r from-blue-50 to-blue-100" id="customer-dashboard-welcome">
               <h2 className="text-xl font-semibold text-gray-800 mb-2">
                 Welcome back, {user?.firstName || 'there'}!
               </h2>
               <p className="text-gray-600">
                 Track your projects and communicate with our team all in one place.
               </p>
+              <Button 
+                className="mt-4" 
+                onClick={handleOpenProjectForm}
+              >
+                <Plus className="h-4 w-4 mr-2" /> Request New Project
+              </Button>
             </Card>
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <Card className="p-4">
-                <h3 className="text-sm font-medium text-gray-500">Active Projects</h3>
-                <p className="text-2xl font-bold">{projects.filter(p => p.status === 'in-progress').length}</p>
+                {isLoadingProjects ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-8 w-8" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-medium text-gray-500">Active Projects</h3>
+                      <FileText className="h-5 w-5 text-blue-500" />
+                    </div>
+                    <p className="text-2xl font-bold mt-2">{projects.filter(p => p.status === 'in_progress' || p.status === 'in-progress').length}</p>
+                  </>
+                )}
               </Card>
               <Card className="p-4">
-                <h3 className="text-sm font-medium text-gray-500">Completed Projects</h3>
-                <p className="text-2xl font-bold">{projects.filter(p => p.status === 'completed').length}</p>
+                {isLoadingProjects ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-8 w-8" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-medium text-gray-500">Completed Projects</h3>
+                      <FileText className="h-5 w-5 text-green-500" />
+                    </div>
+                    <p className="text-2xl font-bold mt-2">{projects.filter(p => p.status === 'completed').length}</p>
+                  </>
+                )}
               </Card>
               <Card className="p-4">
-                <h3 className="text-sm font-medium text-gray-500">Unread Messages</h3>
-                <p className="text-2xl font-bold">{messages.filter(m => !m.isRead).length}</p>
+                {isLoadingMessages ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-8 w-8" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-medium text-gray-500">Unread Messages</h3>
+                      <MessageSquare className="h-5 w-5 text-purple-500" />
+                    </div>
+                    <p className="text-2xl font-bold mt-2">{messages.filter(m => !m.isRead).length}</p>
+                  </>
+                )}
               </Card>
             </div>
 
@@ -178,62 +205,174 @@ export default function CustomerDashboard() {
                 <h2 className="text-xl font-semibold text-gray-800">Your Projects</h2>
                 <Button
                   size="sm"
+                  onClick={handleOpenProjectForm}
                 >
                   <Plus className="h-4 w-4 mr-1" /> New Project
                 </Button>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {projects.map(project => (
-                  <Card key={project.id} className="overflow-hidden">
-                    <div className="p-4">
-                      <div className="flex justify-between">
-                        <h3 className="font-medium">{project.name}</h3>
-                        <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
-                          {project.status}
-                        </span>
+              {isLoadingProjects ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[1, 2, 3].map(i => (
+                    <Card key={i} className="overflow-hidden p-4">
+                      <Skeleton className="h-6 w-3/4 mb-3" />
+                      <Skeleton className="h-4 w-full mb-2" />
+                      <Skeleton className="h-4 w-2/3 mb-4" />
+                      <div className="flex justify-end">
+                        <Skeleton className="h-9 w-24" />
                       </div>
-                      <p className="text-sm text-gray-600 mt-2">{project.description}</p>
-                      <div className="mt-4 flex justify-end">
-                        <Button variant="outline" size="sm">View Details</Button>
+                    </Card>
+                  ))}
+                </div>
+              ) : projects.length === 0 ? (
+                <Card className="p-6 text-center">
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">No projects yet</h3>
+                  <p className="text-gray-500 mb-4">Get started by requesting your first project</p>
+                  <Button onClick={handleOpenProjectForm}>
+                    <Plus className="h-4 w-4 mr-2" /> Request New Project
+                  </Button>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {projects.map(project => (
+                    <Card key={project.id} className="overflow-hidden">
+                      <div className="p-4">
+                        <div className="flex justify-between">
+                          <h3 className="font-medium">{project.name}</h3>
+                          <span className={`text-xs px-2 py-1 rounded ${getStatusStyles(project.status)}`}>
+                            {formatStatus(project.status)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-2">{project.description}</p>
+                        <div className="mt-4 flex justify-end space-x-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleOpenChat(project.id, project.name)}
+                          >
+                            <MessageSquare className="h-3.5 w-3.5 mr-1" /> Chat
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => window.location.href = `/project/${project.id}`}
+                          >
+                            Details
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Recent Messages */}
             <div id="messages-section">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-gray-800">Recent Messages</h2>
-                <Button variant="link" className="text-primary-600 p-0 h-auto">View All</Button>
               </div>
               
-              <div className="space-y-4">
-                {messages.map(message => (
-                  <Card key={message.id} className={message.isRead ? "" : "border-blue-300 bg-blue-50"}>
-                    <div className="p-4">
+              {isLoadingMessages ? (
+                <div className="space-y-4">
+                  {[1, 2].map(i => (
+                    <Card key={i} className="p-4">
                       <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                          {message.sender.firstName?.[0] || 'U'}
-                        </div>
-                        <div>
-                          <div className="font-medium">{message.sender.firstName} {message.sender.lastName}</div>
-                          <div className="text-sm text-gray-500">
-                            {new Date(message.createdAt).toLocaleDateString()}
-                          </div>
-                          <p className="mt-2">{message.content}</p>
+                        <Skeleton className="h-8 w-8 rounded-full" />
+                        <div className="flex-1">
+                          <Skeleton className="h-4 w-36 mb-1" />
+                          <Skeleton className="h-3 w-24 mb-2" />
+                          <Skeleton className="h-4 w-full" />
                         </div>
                       </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : messages.length === 0 ? (
+                <Card className="p-6 text-center">
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">No messages yet</h3>
+                  <p className="text-gray-500">
+                    Messages from our team will appear here
+                  </p>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {messages.map(message => (
+                    <Card key={message.id} className={message.isRead ? "" : "border-blue-300 bg-blue-50"}>
+                      <div className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                            {message.sender.firstName?.[0] || 'A'}
+                          </div>
+                          <div>
+                            <div className="font-medium">{message.sender.firstName} {message.sender.lastName}</div>
+                            <div className="text-sm text-gray-500">
+                              {new Date(message.createdAt).toLocaleDateString()} - Project: {
+                                (projects.find(p => p.id === message.projectId)?.name) || 'Unknown'
+                              }
+                            </div>
+                            <p className="mt-2">{message.content}</p>
+                            {message.attachments && (
+                              <div className="mt-2 flex items-center text-sm text-blue-600">
+                                <Paperclip className="h-3.5 w-3.5 mr-1" />
+                                <span>Attachment</span>
+                              </div>
+                            )}
+                            <div className="mt-3">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => {
+                                  const project = projects.find(p => p.id === message.projectId);
+                                  if (project) {
+                                    handleOpenChat(project.id, project.name);
+                                  }
+                                }}
+                              >
+                                Reply
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </main>
       </div>
+
+      {/* Project Form Modal */}
+      {isProjectFormOpen && (
+        <ProjectForm 
+          isOpen={isProjectFormOpen} 
+          onClose={() => setIsProjectFormOpen(false)} 
+        />
+      )}
+
+      {/* Chat Modal */}
+      {isChatOpen && selectedProject && (
+        <ChatModule 
+          projectId={selectedProject.id}
+          projectName={selectedProject.name}
+          messages={[]}
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+        />
+      )}
+
+      {/* Onboarding Tour */}
+      <OnboardingTour 
+        steps={customerTourSteps}
+        isOpen={showTour}
+        onComplete={() => {
+          setShowTour(false);
+          localStorage.setItem('onboarding-tour-completed-customer', 'true');
+        }}
+        userRole="customer"
+      />
     </div>
   );
 }
