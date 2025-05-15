@@ -212,4 +212,90 @@ export function registerAuthRoutes(app: Express) {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
+  
+  // Endpoint to handle Google OAuth callback
+  app.post("/api/auth/google-callback", async (req: AuthRequest, res: Response) => {
+    try {
+      const { email, firstName, lastName, providerId } = req.body;
+      
+      if (!email || !providerId) {
+        return res.status(400).json({ message: 'Missing required OAuth data' });
+      }
+      
+      // Find or create user with Google profile
+      const user = await findOrCreateUserFromOAuth({
+        email,
+        firstName,
+        lastName,
+        provider: 'google',
+        providerId
+      });
+      
+      if (!user) {
+        return res.status(500).json({ message: 'Failed to create or retrieve user' });
+      }
+      
+      // Set user ID in session
+      req.session.userId = user.id;
+      
+      // Create activity record for login
+      await storage.createActivity({
+        type: 'login',
+        description: `User logged in with Google (${user.role})`,
+        userId: user.id,
+        projectId: null,
+        metadata: null,
+      });
+      
+      // Return user without password
+      const { password, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error('Google OAuth callback error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
+  // Endpoint to handle GitHub OAuth callback
+  app.post("/api/auth/github-callback", async (req: AuthRequest, res: Response) => {
+    try {
+      const { email, firstName, lastName, providerId } = req.body;
+      
+      if (!email || !providerId) {
+        return res.status(400).json({ message: 'Missing required OAuth data' });
+      }
+      
+      // Find or create user with GitHub profile
+      const user = await findOrCreateUserFromOAuth({
+        email,
+        firstName,
+        lastName,
+        provider: 'github',
+        providerId
+      });
+      
+      if (!user) {
+        return res.status(500).json({ message: 'Failed to create or retrieve user' });
+      }
+      
+      // Set user ID in session
+      req.session.userId = user.id;
+      
+      // Create activity record for login
+      await storage.createActivity({
+        type: 'login',
+        description: `User logged in with GitHub (${user.role})`,
+        userId: user.id,
+        projectId: null,
+        metadata: null,
+      });
+      
+      // Return user without password
+      const { password, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error('GitHub OAuth callback error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
 }
