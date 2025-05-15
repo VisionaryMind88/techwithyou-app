@@ -16,8 +16,8 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, firstName?: string, lastName?: string) => Promise<void>;
+  signIn: (email: string, password: string, rememberMe?: boolean, userRole?: string) => Promise<void>;
+  signUp: (email: string, password: string, firstName?: string, lastName?: string, role?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithGitHub: () => Promise<void>;
   logout: () => Promise<void>;
@@ -119,19 +119,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, rememberMe: boolean = false, userRole: string = 'customer') => {
     try {
       setIsLoading(true);
-      console.log("Signing in with email:", email);
+      console.log("Signing in with email:", email, "Role:", userRole, "Remember me:", rememberMe);
+      
+      // First authenticate with Firebase
       await signInWithEmail(email, password);
-      // The user state will be set by the onAuthStateChanged listener
+      
+      // Then make a request to our server to handle role-based auth and remember me
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          rememberMe,
+          userRole
+        }),
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to sign in');
+      }
+      
+      const userData = await response.json();
+      
+      // The user state will be updated by the onAuthStateChanged listener
+      // but we can also update it directly here for faster UI feedback
+      setUser(userData);
+      
+      console.log("Login successful:", userData);
     } catch (error: any) {
       console.error('Sign in error:', error);
       const errorMessage = error.code === 'auth/user-not-found' 
         ? 'User not found. Please check your email or register.'
         : error.code === 'auth/wrong-password'
           ? 'Incorrect password. Please try again.'
-          : 'Failed to sign in. Please try again.';
+          : error.message || 'Failed to sign in. Please try again.';
       
       toast({
         title: "Authentication Error",

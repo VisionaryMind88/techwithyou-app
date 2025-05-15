@@ -15,7 +15,12 @@ interface AuthFormProps {
 export function AuthForm({ onSuccessfulAuth }: AuthFormProps) {
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loginData, setLoginData] = useState({ email: "", password: "" });
+  const [loginData, setLoginData] = useState({ 
+    email: "", 
+    password: "", 
+    rememberMe: false,
+    userRole: "customer" as "customer" | "admin"
+  });
   const [registerData, setRegisterData] = useState({
     email: "",
     password: "",
@@ -32,13 +37,45 @@ export function AuthForm({ onSuccessfulAuth }: AuthFormProps) {
     setIsSubmitting(true);
     
     try {
-      console.log("Logging in with email:", loginData.email);
+      console.log("Logging in with email:", loginData.email, "Role:", loginData.userRole);
       
-      await signIn(loginData.email, loginData.password);
+      // Check if the email exists first to avoid auth errors
+      const checkResponse = await fetch(`/api/auth/check-email?email=${encodeURIComponent(loginData.email)}`);
+      const checkData = await checkResponse.json();
+      
+      if (!checkData.exists) {
+        toast({
+          title: "Email not found",
+          description: "This email is not registered. Please sign up first.",
+          variant: "destructive"
+        });
+        setActiveTab("register"); // Switch to register tab
+        setRegisterData(prev => ({ ...prev, email: loginData.email }));
+        setIsSubmitting(false);
+        return;
+      }
+      
+      if (checkData.role !== loginData.userRole) {
+        toast({
+          title: "Invalid role selection",
+          description: `This account is registered as a ${checkData.role}, not as a ${loginData.userRole}.`,
+          variant: "destructive"
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Send the login request with remember me and role
+      await signIn(
+        loginData.email, 
+        loginData.password, 
+        loginData.rememberMe, 
+        loginData.userRole
+      );
       
       toast({
         title: "Login successful",
-        description: "Welcome back!",
+        description: `Welcome back to the ${loginData.userRole} dashboard!`,
       });
       
       if (onSuccessfulAuth) {
@@ -46,21 +83,85 @@ export function AuthForm({ onSuccessfulAuth }: AuthFormProps) {
       }
     } catch (error) {
       console.error("Login error:", error);
-      
       // Toast is already handled in the auth context
     } finally {
       setIsSubmitting(false);
     }
   };
   
+  // Password validation helper
+  const validatePassword = (password: string): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    
+    if (password.length < 8) {
+      errors.push("Password must be at least 8 characters");
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push("Password must contain at least one uppercase letter");
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push("Password must contain at least one lowercase letter");
+    }
+    if (!/[0-9]/.test(password)) {
+      errors.push("Password must contain at least one number");
+    }
+    if (!/[^A-Za-z0-9]/.test(password)) {
+      errors.push("Password must contain at least one special character");
+    }
+    
+    return { isValid: errors.length === 0, errors };
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
+    // First check if email already exists
+    try {
+      const checkResponse = await fetch(`/api/auth/check-email?email=${encodeURIComponent(registerData.email)}`);
+      const checkData = await checkResponse.json();
+      
+      if (checkData.exists) {
+        toast({
+          title: "Email already exists",
+          description: "This email is already registered. Please sign in instead.",
+          variant: "destructive",
+        });
+        setActiveTab("login"); // Switch to login tab
+        setLoginData(prev => ({ ...prev, email: registerData.email }));
+        setIsSubmitting(false);
+        return;
+      }
+    } catch (error) {
+      console.error("Email check error:", error);
+    }
+    
+    // Check password match
     if (registerData.password !== registerData.confirmPassword) {
       toast({
         title: "Passwords don't match",
         description: "Please make sure your passwords match.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+    
+    // Validate password strength
+    const { isValid, errors } = validatePassword(registerData.password);
+    if (!isValid) {
+      toast({
+        title: "Password too weak",
+        description: (
+          <div>
+            <p>Your password doesn't meet the requirements:</p>
+            <ul className="list-disc pl-4 mt-2">
+              {errors.map((error, i) => (
+                <li key={i}>{error}</li>
+              ))}
+            </ul>
+          </div>
+        ),
         variant: "destructive",
       });
       setIsSubmitting(false);
@@ -74,12 +175,13 @@ export function AuthForm({ onSuccessfulAuth }: AuthFormProps) {
         registerData.email, 
         registerData.password,
         registerData.firstName,
-        registerData.lastName
+        registerData.lastName,
+        loginData.userRole // Use the selected role from the login form
       );
       
       toast({
         title: "Registration successful",
-        description: "Your account has been created.",
+        description: `Your ${loginData.userRole} account has been created.`,
       });
       
       if (onSuccessfulAuth) {

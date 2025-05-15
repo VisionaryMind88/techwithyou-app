@@ -13,6 +13,7 @@ export const users = pgTable("users", {
   role: text("role").notNull().default("customer"), // customer or admin
   provider: text("provider"), // local, google, github
   providerId: text("provider_id"),
+  rememberToken: text("remember_token"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -24,11 +25,27 @@ export const insertUserSchema = createInsertSchema(users).pick({
   role: true,
   provider: true,
   providerId: true,
+  rememberToken: true,
+});
+
+// Strong password validation schema
+export const strongPasswordSchema = z.string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  .regex(/[0-9]/, "Password must contain at least one number")
+  .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character");
+
+// Enhanced user schema with password validation
+export const enhancedUserSchema = insertUserSchema.extend({
+  password: strongPasswordSchema.nullable(),
 });
 
 export const loginUserSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
+  rememberMe: z.boolean().optional().default(false),
+  userRole: z.enum(['admin', 'customer']).optional().default('customer'),
 });
 
 // PROJECTS
