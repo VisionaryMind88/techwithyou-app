@@ -184,6 +184,7 @@ export function registerProjectRoutes(app: Express) {
         type: 'project_update',
         description: `Project status updated to ${status}`,
         userId: project.userId, // The owner of the project
+        projectId: projectId,
         referenceId: projectId,
         referenceType: 'project',
         isRead: false,
@@ -202,8 +203,7 @@ export function registerProjectRoutes(app: Express) {
         await storage.createMessage({
           projectId,
           content: `Your project status has been updated to "${status.replace('_', ' ')}" by admin`,
-          senderId: req.user.id,
-          isRead: false
+          senderId: req.user.id
         });
       }
       

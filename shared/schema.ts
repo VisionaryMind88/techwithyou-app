@@ -131,6 +131,9 @@ export const insertActivitySchema = createInsertSchema(activities).pick({
   description: true,
   projectId: true,
   userId: true,
+  referenceId: true,
+  referenceType: true,
+  isRead: true,
   metadata: true,
 });
 
