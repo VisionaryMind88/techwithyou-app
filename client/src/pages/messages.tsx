@@ -12,21 +12,51 @@ import {
   SendIcon
 } from "lucide-react";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function MessagesPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const [selectedChat, setSelectedChat] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState("");
+  const { toast } = useToast();
 
   // Fetch recent messages
   const { 
     data: messagesData = [], 
-    isLoading: isLoadingMessages 
+    isLoading: isLoadingMessages,
+    refetch: refetchMessages
   } = useQuery<Array<Message & { sender: User }>>({
     queryKey: ['/api/messages/recent'],
     enabled: !!user?.id,
   });
+  
+  // Handle chat selection and mark messages as read
+  const handleSelectChat = async (projectId: number) => {
+    setSelectedChat(projectId);
+    
+    try {
+      // Find unread messages for this project that weren't sent by the current user
+      const unreadMessages = messagesByProject[projectId]?.filter(
+        msg => !msg.isRead && msg.senderId !== user?.id
+      ) || [];
+      
+      // Mark each unread message as read
+      if (unreadMessages.length > 0) {
+        await Promise.all(
+          unreadMessages.map(async (message) => {
+            await apiRequest('PATCH', `/api/messages/${message.id}/read`);
+          })
+        );
+        
+        // Refresh messages after marking as read
+        refetchMessages();
+      }
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+    }
+  };
 
   // Group messages by project
   const messagesByProject = messagesData.reduce<Record<number, Array<Message & { sender: User }>>>((acc, message) => {
@@ -50,12 +80,33 @@ export default function MessagesPage() {
     };
   });
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim() || !selectedChat) return;
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedChat || !user?.id) return;
     
-    // TODO: Implement send message functionality
-    
-    setNewMessage("");
+    try {
+      const messageData = {
+        content: newMessage.trim(),
+        projectId: selectedChat,
+        senderId: user.id, // This will be overridden by the server
+        isRead: false
+      };
+      
+      const response = await apiRequest('POST', '/api/messages', messageData);
+      const responseData = await response.json();
+      
+      // Invalidate queries to refresh the messages
+      queryClient.invalidateQueries({ queryKey: ['/api/messages/recent'] });
+      
+      // Clear the input field
+      setNewMessage("");
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -107,7 +158,7 @@ export default function MessagesPage() {
                       className={`w-full text-left p-4 border-b hover:bg-gray-50 flex items-start space-x-3 ${
                         selectedChat === chat.projectId ? 'bg-blue-50' : ''
                       }`}
-                      onClick={() => setSelectedChat(chat.projectId)}
+                      onClick={() => handleSelectChat(chat.projectId)}
                     >
                       <Avatar>
                         <AvatarFallback className="bg-primary-100 text-primary-700">

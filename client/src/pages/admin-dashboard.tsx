@@ -34,11 +34,38 @@ export default function AdminDashboard() {
   // Fetch all projects
   const { 
     data: projectsData = [], 
-    isLoading: isLoadingProjects 
+    isLoading: isLoadingProjects,
+    refetch: refetchProjects
   } = useQuery<Array<Project & { user: User }>>({
     queryKey: ['/api/projects/admin'],
     enabled: !!user?.id && user?.role === "admin"
   });
+  
+  // Handle project status updates
+  const handleProjectStatusUpdate = async (projectId: number, status: string) => {
+    try {
+      const response = await apiRequest('PATCH', `/api/projects/${projectId}/status`, { status });
+      
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: `Project status updated to ${status.replace('_', ' ')}`,
+        });
+        
+        // Refresh projects data
+        refetchProjects();
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update project status');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "An error occurred while updating project status",
+        variant: "destructive"
+      });
+    }
+  };
 
   // Fetch recent activities
   const { 

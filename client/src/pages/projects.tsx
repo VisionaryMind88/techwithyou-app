@@ -9,10 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
 import { CalendarIcon, FolderIcon, ArrowRightIcon, PlusIcon } from "lucide-react";
 import { format } from "date-fns";
+import { ProjectForm } from "@/components/project-form";
 
 export default function ProjectsPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+  const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
 
   // Fetch projects based on user role
   const { 
@@ -25,12 +27,20 @@ export default function ProjectsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-amber-100 text-amber-800';
+      case 'pending_approval': return 'bg-amber-100 text-amber-800';
       case 'in_progress': return 'bg-blue-100 text-blue-800';
       case 'completed': return 'bg-green-100 text-green-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const handleOpenProjectForm = () => {
+    setIsProjectFormOpen(true);
+  };
+
+  const handleCloseProjectForm = () => {
+    setIsProjectFormOpen(false);
   };
 
   return (
@@ -53,10 +63,12 @@ export default function ProjectsPage() {
             <h2 className="text-lg font-medium text-gray-700">
               {isAdmin ? 'All Projects' : 'My Projects'}
             </h2>
-            <Button className="flex items-center">
-              <PlusIcon className="h-4 w-4 mr-2" />
-              New Project
-            </Button>
+            {!isAdmin && (
+              <Button className="flex items-center" onClick={handleOpenProjectForm}>
+                <PlusIcon className="h-4 w-4 mr-2" />
+                New Project
+              </Button>
+            )}
           </div>
           
           {isLoadingProjects ? (
@@ -86,7 +98,7 @@ export default function ProjectsPage() {
                       <Badge className={getStatusColor(project.status)}>
                         {project.status.replace('_', ' ')}
                       </Badge>
-                      {isAdmin && (
+                      {isAdmin && project.user && (
                         <div className="text-sm text-gray-500">
                           By {project.user.firstName} {project.user.lastName}
                         </div>
@@ -111,14 +123,22 @@ export default function ProjectsPage() {
                       ? 'There are no projects in the system yet.' 
                       : 'You have not created any projects yet.'}
                   </p>
-                  <Button>
-                    <PlusIcon className="h-4 w-4 mr-2" />
-                    Create New Project
-                  </Button>
+                  {!isAdmin && (
+                    <Button onClick={handleOpenProjectForm}>
+                      <PlusIcon className="h-4 w-4 mr-2" />
+                      Create New Project
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
           )}
+          
+          {/* Project Form Dialog */}
+          <ProjectForm 
+            isOpen={isProjectFormOpen} 
+            onClose={handleCloseProjectForm} 
+          />
         </main>
       </div>
     </div>
