@@ -170,6 +170,14 @@ export function registerAuthRoutes(app: Express) {
         // Save token to user record
         await storage.updateUser(user.id, { rememberToken });
         
+        // Set cookie for remember me (30 days)
+        res.cookie('remember_token', rememberToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production', 
+          maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+          sameSite: 'lax'
+        });
+        
         // Set longer session expiration (30 days)
         req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
       }

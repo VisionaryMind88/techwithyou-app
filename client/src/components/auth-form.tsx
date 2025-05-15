@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/context/auth-context";
 import { Logo } from "@/components/logo";
 import { useToast } from "@/hooks/use-toast";
@@ -287,7 +289,43 @@ export function AuthForm({ onSuccessfulAuth }: AuthFormProps) {
                   />
                 </div>
                 
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                <div className="flex flex-col space-y-4 mt-3">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="remember-me" 
+                      checked={loginData.rememberMe}
+                      onCheckedChange={(checked) => 
+                        setLoginData({ ...loginData, rememberMe: !!checked })
+                      }
+                    />
+                    <label
+                      htmlFor="remember-me"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Remember me
+                    </label>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="user-role">Login as</Label>
+                    <Select 
+                      value={loginData.userRole} 
+                      onValueChange={(value) => 
+                        setLoginData({ ...loginData, userRole: value as "customer" | "admin" })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="customer">Customer</SelectItem>
+                        <SelectItem value="admin">Administrator</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <Button type="submit" className="w-full mt-6" disabled={isSubmitting}>
                   {isSubmitting ? "Signing in..." : "Sign In"}
                 </Button>
               </div>
@@ -338,6 +376,26 @@ export function AuthForm({ onSuccessfulAuth }: AuthFormProps) {
                   onChange={e => setRegisterData({ ...registerData, password: e.target.value })}
                   required
                 />
+                <div className="text-xs text-muted-foreground mt-1">
+                  <p>Password must contain:</p>
+                  <ul className="list-disc pl-4 mt-1">
+                    <li className={registerData.password.length >= 8 ? "text-green-500" : ""}>
+                      At least 8 characters
+                    </li>
+                    <li className={/[A-Z]/.test(registerData.password) ? "text-green-500" : ""}>
+                      At least one uppercase letter
+                    </li>
+                    <li className={/[a-z]/.test(registerData.password) ? "text-green-500" : ""}>
+                      At least one lowercase letter
+                    </li>
+                    <li className={/[0-9]/.test(registerData.password) ? "text-green-500" : ""}>
+                      At least one number
+                    </li>
+                    <li className={/[^A-Za-z0-9]/.test(registerData.password) ? "text-green-500" : ""}>
+                      At least one special character
+                    </li>
+                  </ul>
+                </div>
               </div>
               
               <div className="space-y-2 mt-4">
@@ -349,6 +407,27 @@ export function AuthForm({ onSuccessfulAuth }: AuthFormProps) {
                   onChange={e => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
                   required
                 />
+              </div>
+              
+              <div className="space-y-2 mt-4">
+                <Label htmlFor="register-role">Account Type</Label>
+                <Select 
+                  value={loginData.userRole} 
+                  onValueChange={(value) => 
+                    setLoginData({ ...loginData, userRole: value as "customer" | "admin" })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select account type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="customer">Customer</SelectItem>
+                    <SelectItem value="admin">Administrator</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Select "Customer" if you want to request services or "Administrator" for managing projects
+                </p>
               </div>
               
               <Button type="submit" className="w-full mt-6" disabled={isSubmitting}>
