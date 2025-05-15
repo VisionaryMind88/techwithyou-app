@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { AuthForm } from "@/components/auth-form";
-import { useMockAuth } from "@/context/mock-auth-context";
+import { useAuth } from "@/context/auth-context";
 
 export default function AuthPage() {
   const [, navigate] = useLocation();
-  const { isAuthenticated, isLoading } = useMockAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   
   console.log("AuthPage: Auth state =", { isAuthenticated, isLoading });
   

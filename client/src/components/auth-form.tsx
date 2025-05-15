@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useMockAuth } from "@/context/mock-auth-context";
+import { useAuth } from "@/context/auth-context";
 import { Logo } from "@/components/logo";
 import { useToast } from "@/hooks/use-toast";
 
@@ -24,7 +24,7 @@ export function AuthForm({ onSuccessfulAuth }: AuthFormProps) {
     lastName: "",
   });
   
-  const { signIn, signUp, signInWithGoogle, signInWithGitHub } = useMockAuth();
+  const { signIn, signUp, signInWithGoogle, signInWithGitHub } = useAuth();
   const { toast } = useToast();
   
   const handleLogin = async (e: React.FormEvent) => {
@@ -32,10 +32,9 @@ export function AuthForm({ onSuccessfulAuth }: AuthFormProps) {
     setIsSubmitting(true);
     
     try {
-      console.log("Logging in with mock auth");
+      console.log("Logging in with email:", loginData.email);
       
-      // Using the mock auth
-      signIn();
+      await signIn(loginData.email, loginData.password);
       
       toast({
         title: "Login successful",
@@ -46,11 +45,9 @@ export function AuthForm({ onSuccessfulAuth }: AuthFormProps) {
         onSuccessfulAuth();
       }
     } catch (error) {
-      toast({
-        title: "Login failed",
-        description: "Please check your credentials and try again.",
-        variant: "destructive",
-      });
+      console.error("Login error:", error);
+      
+      // Toast is already handled in the auth context
     } finally {
       setIsSubmitting(false);
     }
@@ -71,10 +68,14 @@ export function AuthForm({ onSuccessfulAuth }: AuthFormProps) {
     }
     
     try {
-      console.log("Registering with mock auth");
+      console.log("Registering with email:", registerData.email);
       
-      // Using the mock auth
-      signUp();
+      await signUp(
+        registerData.email, 
+        registerData.password,
+        registerData.firstName,
+        registerData.lastName
+      );
       
       toast({
         title: "Registration successful",
@@ -85,27 +86,47 @@ export function AuthForm({ onSuccessfulAuth }: AuthFormProps) {
         onSuccessfulAuth();
       }
     } catch (error) {
-      toast({
-        title: "Registration failed",
-        description: "Please try again later.",
-        variant: "destructive",
-      });
+      console.error("Registration error:", error);
+      
+      // Toast is already handled in the auth context
     } finally {
       setIsSubmitting(false);
     }
   };
   
-  const handleGoogleSignIn = () => {
-    signInWithGoogle();
-    if (onSuccessfulAuth) {
-      onSuccessfulAuth();
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsSubmitting(true);
+      await signInWithGoogle();
+      // The redirect will happen automatically, so we don't need to call onSuccessfulAuth yet
+      // That will happen when the user is redirected back after authentication
+      
+      toast({
+        title: "Google Sign In",
+        description: "Redirecting to Google...",
+      });
+    } catch (error) {
+      console.error("Google Sign In error:", error);
+      // Toast is already handled in the auth context
+      setIsSubmitting(false);
     }
   };
   
-  const handleGitHubSignIn = () => {
-    signInWithGitHub();
-    if (onSuccessfulAuth) {
-      onSuccessfulAuth();
+  const handleGitHubSignIn = async () => {
+    try {
+      setIsSubmitting(true);
+      await signInWithGitHub();
+      // The redirect will happen automatically, so we don't need to call onSuccessfulAuth yet
+      // That will happen when the user is redirected back after authentication
+      
+      toast({
+        title: "GitHub Sign In",
+        description: "Redirecting to GitHub...",
+      });
+    } catch (error) {
+      console.error("GitHub Sign In error:", error);
+      // Toast is already handled in the auth context
+      setIsSubmitting(false);
     }
   };
 

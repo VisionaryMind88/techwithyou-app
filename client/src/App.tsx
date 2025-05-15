@@ -1,4 +1,5 @@
 import { Switch, Route } from "wouter";
+import { useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -8,11 +9,44 @@ import AuthPage from "@/pages/auth";
 import CustomerDashboard from "@/pages/customer-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
 import ProjectDetail from "@/pages/project-detail";
-import { useMockAuth, MockAuthProvider } from "./context/mock-auth-context";
+import { useAuth, AuthProvider } from "./context/auth-context";
 import { ThemeProvider } from "next-themes";
+import { handleAuthRedirect } from "./lib/firebase";
+import { useToast } from "./hooks/use-toast";
+
+// Component to handle auth redirects
+function AuthRedirectHandler() {
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    async function handleRedirect() {
+      try {
+        const user = await handleAuthRedirect();
+        
+        if (user) {
+          toast({
+            title: "Authentication Successful",
+            description: `Welcome${user.firstName ? `, ${user.firstName}` : ''}!`,
+          });
+        }
+      } catch (error) {
+        console.error("Auth redirect error:", error);
+        toast({
+          title: "Authentication Failed",
+          description: "There was an error signing you in. Please try again.",
+          variant: "destructive"
+        });
+      }
+    }
+    
+    handleRedirect();
+  }, [toast]);
+  
+  return null; // This component doesn't render anything
+}
 
 function Router() {
-  const { user, isAuthenticated, isLoading } = useMockAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   console.log("Router: Auth state =", { user, isAuthenticated, isLoading });
 
@@ -47,16 +81,17 @@ function Router() {
 
 function App() {
   return (
-    <MockAuthProvider>
+    <AuthProvider>
       <ThemeProvider attribute="class" defaultTheme="light">
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <Toaster />
+            <AuthRedirectHandler />
             <Router />
           </TooltipProvider>
         </QueryClientProvider>
       </ThemeProvider>
-    </MockAuthProvider>
+    </AuthProvider>
   );
 }
 
