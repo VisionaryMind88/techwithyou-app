@@ -7,7 +7,13 @@ import {
   signInWithGoogle as fbSignInWithGoogle,
   signInWithGitHub as fbSignInWithGitHub,
   logOut,
-  updateUserProfile
+  updateUserProfile,
+  resendVerificationEmail as fbResendVerificationEmail,
+  verifyEmail as fbVerifyEmail,
+  isEmailVerified as fbIsEmailVerified,
+  initializePhoneAuth,
+  enrollIn2FA,
+  complete2FAEnrollment
 } from "@/lib/firebase";
 import { type User } from "@shared/schema";
 import { toast } from "@/hooks/use-toast";
@@ -16,11 +22,17 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isEmailVerified: boolean;
+  is2FAEnabled: boolean;
   signIn: (email: string, password: string, rememberMe?: boolean, userRole?: string) => Promise<void>;
   signUp: (email: string, password: string, firstName?: string, lastName?: string, role?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithGitHub: () => Promise<void>;
   logout: () => Promise<void>;
+  resendVerificationEmail: () => Promise<void>;
+  verifyEmail: (code: string) => Promise<void>;
+  setupTwoFactorAuth: (phoneNumber: string) => Promise<string>;
+  completeTwoFactorSetup: (verificationId: string, code: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,6 +40,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [is2FAEnabled, setIs2FAEnabled] = useState(false);
+  const [twoFactorSetupData, setTwoFactorSetupData] = useState<{
+    verificationId: string;
+    recaptchaVerifier: any;
+  } | null>(null);
 
   useEffect(() => {
     console.log("Setting up auth state change listener");

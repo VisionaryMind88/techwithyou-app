@@ -10,7 +10,16 @@ import {
   onAuthStateChanged, 
   sendPasswordResetEmail,
   updateProfile,
-  getRedirectResult
+  getRedirectResult,
+  sendEmailVerification,
+  applyActionCode,
+  ActionCodeSettings,
+  EmailAuthProvider,
+  linkWithCredential,
+  PhoneAuthProvider,
+  RecaptchaVerifier,
+  multiFactor,
+  PhoneMultiFactorGenerator
 } from "firebase/auth";
 
 const firebaseConfig = {
@@ -35,8 +44,16 @@ export const signInWithEmail = (email: string, password: string) => {
 };
 
 // Create user with email and password
-export const createUser = (email: string, password: string) => {
-  return createUserWithEmailAndPassword(auth, email, password);
+export const createUser = async (email: string, password: string) => {
+  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  // Send email verification
+  if (userCredential.user) {
+    await sendEmailVerification(userCredential.user, {
+      url: window.location.origin + '/auth?verified=true',
+      handleCodeInApp: true,
+    });
+  }
+  return userCredential;
 };
 
 // Sign in with Google
@@ -122,6 +139,68 @@ export const handleAuthRedirect = async () => {
     console.error('Authentication redirect error:', error);
     throw error;
   }
+};
+
+// Send verification email again
+export const resendVerificationEmail = async () => {
+  if (!auth.currentUser) throw new Error("No user is signed in.");
+  return sendEmailVerification(auth.currentUser, {
+    url: window.location.origin + '/auth?verified=true',
+    handleCodeInApp: true,
+  });
+};
+
+// Check if email is verified
+export const isEmailVerified = () => {
+  return auth.currentUser?.emailVerified || false;
+};
+
+// Verify email with code
+export const verifyEmail = async (actionCode: string) => {
+  return applyActionCode(auth, actionCode);
+};
+
+// Initialize 2FA with phone
+export const initializePhoneAuth = (elementId: string) => {
+  if (!auth.currentUser) throw new Error("No user is signed in.");
+  const recaptchaVerifier = new RecaptchaVerifier(auth, elementId, {
+    size: 'normal',
+    callback: () => {
+      // reCAPTCHA solved, allow signInWithPhoneNumber.
+    }
+  });
+  return recaptchaVerifier;
+};
+
+// Enroll in 2FA
+export const enrollIn2FA = async (phoneNumber: string, recaptchaVerifier: RecaptchaVerifier) => {
+  if (!auth.currentUser) throw new Error("No user is signed in.");
+  
+  // Get the user's multiFactor object
+  const multiFactorUser = multiFactor(auth.currentUser);
+  
+  // Specify the phone number and get verification ID
+  const phoneInfoOptions = {
+    phoneNumber,
+    session: await multiFactorUser.getSession()
+  };
+  
+  // Send verification code
+  const phoneAuthProvider = new PhoneAuthProvider(auth);
+  return phoneAuthProvider.verifyPhoneNumber(phoneInfoOptions, recaptchaVerifier);
+};
+
+// Complete 2FA enrollment
+export const complete2FAEnrollment = async (verificationId: string, verificationCode: string) => {
+  if (!auth.currentUser) throw new Error("No user is signed in.");
+  
+  // Create credential from verification code
+  const phoneAuthCredential = PhoneAuthProvider.credential(verificationId, verificationCode);
+  const multiFactorAssertion = PhoneMultiFactorGenerator.assertion(phoneAuthCredential);
+  
+  // Complete enrollment
+  const multiFactorUser = multiFactor(auth.currentUser);
+  return multiFactorUser.enroll(multiFactorAssertion, "My phone number");
 };
 
 // Export auth for use in components
