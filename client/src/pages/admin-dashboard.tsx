@@ -30,6 +30,25 @@ export default function AdminDashboard() {
       setShowTour(true);
     }
   }, [user]);
+  
+  // Project handlers
+  const handleReviewProject = (projectId: number) => {
+    // Find the project to get its name
+    const project = projectsData.find(p => p.id === projectId);
+    if (project) {
+      setSelectedProjectId(projectId);
+      setSelectedProjectName(project.name);
+      setIsChatModalOpen(true);
+    }
+  };
+  
+  const handleApproveProject = (projectId: number) => {
+    handleProjectStatusUpdate(projectId, 'in_progress');
+  };
+  
+  const handleRejectProject = (projectId: number) => {
+    handleProjectStatusUpdate(projectId, 'rejected');
+  };
 
   // Fetch all projects
   const { 
@@ -267,9 +286,9 @@ export default function AdminDashboard() {
               <ProjectTable 
                 projects={projectsData.slice(0, 5)} 
                 isLoading={isLoadingProjects}
-                onReview={handleProjectReview}
-                onApprove={handleProjectApprove}
-                onReject={handleProjectReject}
+                onReview={handleReviewProject}
+                onApprove={handleApproveProject}
+                onReject={handleRejectProject}
               />
             </div>
 
