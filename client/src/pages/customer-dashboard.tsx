@@ -4,13 +4,15 @@ import { Sidebar } from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Menu, Bell, FileText, MessageSquare, Paperclip } from "lucide-react";
-import { Project, Message, User } from "@shared/schema";
+import { Plus, Menu, Bell, FileText, MessageSquare, Paperclip, ActivityIcon } from "lucide-react";
+import { Project, Message, User, Activity } from "@shared/schema";
 import { useAuth } from "@/context/auth-context";
 import { OnboardingTour, customerTourSteps } from "@/components/onboarding-tour";
 import { ProjectForm } from "@/components/project-form";
 import { ChatModule } from "@/components/chat-module";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CustomerDashboard() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -19,8 +21,7 @@ export default function CustomerDashboard() {
   const [selectedProject, setSelectedProject] = useState<{id: number, name: string} | null>(null);
   const [showTour, setShowTour] = useState(false);
   const { user } = useAuth();
-  
-  console.log("CustomerDashboard: User =", user);
+  const { toast } = useToast();
 
   // Check if onboarding tour should be shown
   useEffect(() => {
@@ -45,6 +46,15 @@ export default function CustomerDashboard() {
     isLoading: isLoadingMessages 
   } = useQuery<Array<Message & { sender: User }>>({
     queryKey: ['/api/messages/recent'],
+    enabled: !!user?.id && user?.role === "customer"
+  });
+  
+  // Fetch user's activities/notifications
+  const {
+    data: activities = [],
+    isLoading: isLoadingActivities
+  } = useQuery<Activity[]>({
+    queryKey: ['/api/activities/recent'],
     enabled: !!user?.id && user?.role === "customer"
   });
 
@@ -267,6 +277,91 @@ export default function CustomerDashboard() {
               )}
             </div>
 
+            {/* Recent Notifications */}
+            <div className="mb-6" id="notifications-section">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-gray-800">Recent Notifications</h2>
+              </div>
+              
+              {isLoadingActivities ? (
+                <div className="space-y-4">
+                  {[1, 2].map(i => (
+                    <Card key={i} className="p-4">
+                      <div className="flex items-start gap-3">
+                        <Skeleton className="h-8 w-8 rounded-full" />
+                        <div className="flex-1">
+                          <Skeleton className="h-4 w-36 mb-1" />
+                          <Skeleton className="h-3 w-24 mb-2" />
+                          <Skeleton className="h-4 w-full" />
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : activities.length === 0 ? (
+                <Card className="p-6 text-center">
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">No notifications yet</h3>
+                  <p className="text-gray-500">
+                    You'll be notified about important changes to your projects
+                  </p>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {activities.slice(0, 5).map(activity => {
+                    // Try to parse metadata if it exists
+                    let metadata = {};
+                    try {
+                      if (activity.metadata && typeof activity.metadata === 'string') {
+                        metadata = JSON.parse(activity.metadata);
+                      }
+                    } catch (e) {
+                      console.error("Failed to parse activity metadata:", e);
+                    }
+                    
+                    return (
+                      <Card key={activity.id} className={activity.isRead ? "" : "border-blue-300 bg-blue-50"}>
+                        <div className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center">
+                              <ActivityIcon className="h-4 w-4" />
+                            </div>
+                            <div>
+                              <div className="font-medium">{activity.description}</div>
+                              <div className="text-sm text-gray-500">
+                                {activity.createdAt ? format(new Date(activity.createdAt), "MMM d, yyyy 'at' h:mm a") : 'Recent'}
+                              </div>
+                              {activity.type === 'project_update' && (
+                                <div className="mt-2">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => {
+                                      // Mark activity as read
+                                      apiRequest('PATCH', `/api/activities/${activity.id}/read`);
+                                      
+                                      // Open project details or chat
+                                      if (activity.referenceType === 'project' && activity.referenceId) {
+                                        const project = projects.find(p => p.id === activity.referenceId);
+                                        if (project) {
+                                          handleOpenChat(project.id, project.name);
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    View Project
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            
             {/* Recent Messages */}
             <div id="messages-section">
               <div className="flex justify-between items-center mb-4">

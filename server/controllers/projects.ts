@@ -179,6 +179,34 @@ export function registerProjectRoutes(app: Express) {
       
       const updatedProject = await storage.updateProjectStatus(projectId, status);
       
+      // Create activity notification for project status update
+      await storage.createActivity({
+        type: 'project_update',
+        description: `Project status updated to ${status}`,
+        userId: project.userId, // The owner of the project
+        referenceId: projectId,
+        referenceType: 'project',
+        isRead: false,
+        metadata: JSON.stringify({
+          projectId,
+          projectName: project.name,
+          oldStatus: project.status,
+          newStatus: status,
+          updatedBy: req.user.id,
+          updatedByName: `${req.user.firstName} ${req.user.lastName}`
+        })
+      });
+      
+      // Create a message notifying the user about status change
+      if (req.user.role === 'admin' && project.userId !== req.user.id) {
+        await storage.createMessage({
+          projectId,
+          content: `Your project status has been updated to "${status.replace('_', ' ')}" by admin`,
+          senderId: req.user.id,
+          isRead: false
+        });
+      }
+      
       res.json(updatedProject);
     } catch (error) {
       console.error('Update project status error:', error);
