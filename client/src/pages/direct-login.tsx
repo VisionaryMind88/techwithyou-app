@@ -20,10 +20,13 @@ export default function DirectLoginPage() {
     setIsLoading(true);
     
     try {
-      // Our test credentials
+      // Get values from input fields
+      const emailField = document.getElementById(role === 'admin' ? 'admin-email' : 'customer-email') as HTMLInputElement;
+      const passwordField = document.getElementById(role === 'admin' ? 'admin-password' : 'customer-password') as HTMLInputElement;
+      
       const credentials = {
-        email: role === 'admin' ? 'admin@techwithyou.com' : 'customer@techwithyou.com',
-        password: role === 'admin' ? 'Admin@123' : 'Customer@123',
+        email: emailField?.value || (role === 'admin' ? 'admin@techwithyou.com' : 'customer@techwithyou.com'),
+        password: passwordField?.value || (role === 'admin' ? 'Admin@123' : 'Customer@123'),
         rememberMe: true,
         userRole: role
       };
@@ -96,8 +99,7 @@ export default function DirectLoginPage() {
                   <Input
                     id="customer-email"
                     type="email"
-                    value="customer@techwithyou.com"
-                    readOnly
+                    defaultValue="customer@techwithyou.com"
                   />
                 </div>
                 
@@ -106,8 +108,7 @@ export default function DirectLoginPage() {
                   <Input
                     id="customer-password"
                     type="password"
-                    value="Customer@123"
-                    readOnly
+                    defaultValue="Customer@123"
                   />
                 </div>
                 
@@ -132,8 +133,7 @@ export default function DirectLoginPage() {
                   <Input
                     id="admin-email"
                     type="email"
-                    value="admin@techwithyou.com"
-                    readOnly
+                    defaultValue="admin@techwithyou.com"
                   />
                 </div>
                 
@@ -142,8 +142,7 @@ export default function DirectLoginPage() {
                   <Input
                     id="admin-password"
                     type="password"
-                    value="Admin@123"
-                    readOnly
+                    defaultValue="Admin@123"
                   />
                 </div>
                 

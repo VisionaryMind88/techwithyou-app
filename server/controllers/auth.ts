@@ -185,9 +185,8 @@ export function registerAuthRoutes(app: Express) {
       // Generate remember token if requested
       let rememberToken = null;
       if (rememberMe) {
-        // Generate a secure random token
-        const crypto = require('crypto');
-        rememberToken = crypto.randomBytes(64).toString('hex');
+        // Generate a simple token instead of using crypto (which requires import)
+        rememberToken = Date.now() + Math.random().toString(36).substring(2, 15);
         
         // Save token to user record
         await storage.updateUser(user.id, { rememberToken });
