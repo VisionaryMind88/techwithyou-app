@@ -10,6 +10,9 @@ import DirectLoginPage from "@/pages/direct-login";
 import CustomerDashboard from "@/pages/customer-dashboard";
 import AdminDashboard from "@/pages/admin-dashboard";
 import ProjectDetail from "@/pages/project-detail";
+import ProjectsPage from "@/pages/projects";
+import MessagesPage from "@/pages/messages";
+import SettingsPage from "@/pages/settings";
 import { useAuth, AuthProvider } from "./context/auth-context";
 import { ThemeProvider } from "next-themes";
 import { handleAuthRedirect } from "./lib/firebase";
@@ -81,10 +84,10 @@ function Router() {
     return (
       <Switch>
         <Route path="/" component={CustomerDashboard} />
-        <Route path="/projects" component={CustomerDashboard} />
+        <Route path="/projects" component={ProjectsPage} />
         <Route path="/projects/:id" component={ProjectDetail} />
-        <Route path="/messages" component={CustomerDashboard} />
-        <Route path="/settings" component={CustomerDashboard} />
+        <Route path="/messages" component={MessagesPage} />
+        <Route path="/settings" component={SettingsPage} />
         <Route component={NotFound} />
       </Switch>
     );
@@ -94,10 +97,10 @@ function Router() {
     return (
       <Switch>
         <Route path="/" component={AdminDashboard} />
-        <Route path="/projects" component={AdminDashboard} />
+        <Route path="/projects" component={ProjectsPage} />
         <Route path="/projects/:id" component={ProjectDetail} />
-        <Route path="/messages" component={AdminDashboard} />
-        <Route path="/settings" component={AdminDashboard} />
+        <Route path="/messages" component={MessagesPage} />
+        <Route path="/settings" component={SettingsPage} />
         <Route component={NotFound} />
       </Switch>
     );
