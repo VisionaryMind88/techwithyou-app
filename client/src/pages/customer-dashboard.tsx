@@ -5,8 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Menu, Bell, FileText, MessageSquare, Paperclip, ActivityIcon } from "lucide-react";
-import { Project, Message, User, Activity } from "@shared/schema";
+import { Project, Message, User, Activity as BaseActivity } from "@shared/schema";
 import { useAuth } from "@/context/auth-context";
+
+// Enhanced Activity interface that matches our extended schema
+interface Activity extends Omit<BaseActivity, 'referenceId' | 'referenceType' | 'isRead'> {
+  referenceId: number | null;
+  referenceType: string | null;
+  isRead: boolean;
+}
+
 import { OnboardingTour, customerTourSteps } from "@/components/onboarding-tour";
 import { ProjectForm } from "@/components/project-form";
 import { ChatModule } from "@/components/chat-module";
