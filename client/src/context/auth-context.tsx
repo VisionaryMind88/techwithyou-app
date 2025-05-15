@@ -65,6 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             role: 'customer',
             provider: 'firebase',
             providerId: firebaseUser.uid,
+            rememberToken: null,
             createdAt: new Date()
           };
           
@@ -314,15 +315,126 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Email verification function
+  const resendVerificationEmail = async () => {
+    try {
+      setIsLoading(true);
+      await fbResendVerificationEmail();
+      toast({
+        title: "Verification Email Sent",
+        description: "Please check your inbox for the verification link.",
+      });
+    } catch (error: any) {
+      console.error("Resend verification email error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send verification email. Please try again.",
+        variant: "destructive"
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Verify email with action code
+  const verifyEmail = async (code: string) => {
+    try {
+      setIsLoading(true);
+      await fbVerifyEmail(code);
+      setIsEmailVerified(true);
+      toast({
+        title: "Email Verified",
+        description: "Your email has been successfully verified.",
+      });
+    } catch (error: any) {
+      console.error("Email verification error:", error);
+      toast({
+        title: "Verification Error",
+        description: error.message || "Failed to verify email. The link may have expired.",
+        variant: "destructive"
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Setup 2FA with phone number
+  const setupTwoFactorAuth = async (phoneNumber: string) => {
+    try {
+      setIsLoading(true);
+      
+      // Create reCAPTCHA verifier
+      const recaptchaVerifier = initializePhoneAuth('recaptcha-container');
+      
+      // Send verification code to phone
+      const verificationId = await enrollIn2FA(phoneNumber, recaptchaVerifier);
+      
+      // Store verification ID for later use
+      setTwoFactorSetupData({ verificationId, recaptchaVerifier });
+      
+      toast({
+        title: "Verification Code Sent",
+        description: `We've sent a verification code to ${phoneNumber}. Please enter it to complete 2FA setup.`,
+      });
+      
+      return verificationId;
+    } catch (error: any) {
+      console.error("2FA setup error:", error);
+      toast({
+        title: "2FA Setup Error",
+        description: error.message || "Failed to set up two-factor authentication. Please try again.",
+        variant: "destructive"
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Complete 2FA setup
+  const completeTwoFactorSetup = async (verificationId: string, code: string) => {
+    try {
+      setIsLoading(true);
+      
+      // Verify code and enroll the second factor
+      await complete2FAEnrollment(verificationId, code);
+      setIs2FAEnabled(true);
+      
+      toast({
+        title: "2FA Enabled",
+        description: "Two-factor authentication has been successfully enabled for your account.",
+      });
+    } catch (error: any) {
+      console.error("Complete 2FA setup error:", error);
+      toast({
+        title: "2FA Setup Error",
+        description: error.message || "Failed to complete two-factor authentication setup. Please try again.",
+        variant: "destructive"
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+      setTwoFactorSetupData(null);
+    }
+  };
+
   const value = {
     user,
     isAuthenticated: !!user,
     isLoading,
+    isEmailVerified,
+    is2FAEnabled,
     signIn,
     signUp,
     signInWithGoogle,
     signInWithGitHub,
-    logout
+    logout,
+    resendVerificationEmail,
+    verifyEmail,
+    setupTwoFactorAuth,
+    completeTwoFactorSetup
   };
 
   console.log("Auth context value:", { 
