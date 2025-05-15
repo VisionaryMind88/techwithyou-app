@@ -1,6 +1,7 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, foreignKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
 // USERS
 export const users = pgTable("users", {
@@ -112,6 +113,57 @@ export const insertActivitySchema = createInsertSchema(activities).pick({
   userId: true,
   metadata: true,
 });
+
+// Define relationships between tables
+export const usersRelations = relations(users, ({ many }) => ({
+  projects: many(projects),
+  files: many(files),
+  messages: many(messages),
+  activities: many(activities),
+}));
+
+export const projectsRelations = relations(projects, ({ one, many }) => ({
+  user: one(users, {
+    fields: [projects.userId],
+    references: [users.id],
+  }),
+  files: many(files),
+  messages: many(messages),
+  activities: many(activities),
+}));
+
+export const filesRelations = relations(files, ({ one }) => ({
+  project: one(projects, {
+    fields: [files.projectId],
+    references: [projects.id],
+  }),
+  user: one(users, {
+    fields: [files.userId],
+    references: [users.id],
+  }),
+}));
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  project: one(projects, {
+    fields: [messages.projectId],
+    references: [projects.id],
+  }),
+  sender: one(users, {
+    fields: [messages.senderId],
+    references: [users.id],
+  }),
+}));
+
+export const activitiesRelations = relations(activities, ({ one }) => ({
+  user: one(users, {
+    fields: [activities.userId],
+    references: [users.id],
+  }),
+  project: one(projects, {
+    fields: [activities.projectId],
+    references: [projects.id],
+  }),
+}));
 
 // Export types
 export type User = typeof users.$inferSelect;
