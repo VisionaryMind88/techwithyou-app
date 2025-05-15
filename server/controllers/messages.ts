@@ -1,9 +1,66 @@
 import { Express, Response } from "express";
 import { storage } from "../storage";
-import { insertMessageSchema } from "@shared/schema";
+import { insertMessageSchema, activities } from "@shared/schema";
 import { AuthRequest } from "../middleware/auth";
+import { db } from "../db";
+import { eq, desc } from "drizzle-orm";
 
 export function registerMessageRoutes(app: Express) {
+  // Get recent activities for the current user
+  app.get("/api/activities/user", async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      // Get recent activities for the current user from storage
+      const userActivities = await storage.getRecentActivities(10);
+      
+      // Filter activities to only show those relevant to the current user
+      const filteredActivities = userActivities.filter(activity => 
+        activity.userId === req.user?.id
+      );
+
+      res.json(filteredActivities);
+    } catch (error) {
+      console.error("Get user activities error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
+  // Mark an activity as read
+  app.patch("/api/activities/:id/read", async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const activityId = parseInt(req.params.id);
+      
+      if (isNaN(activityId)) {
+        return res.status(400).json({ message: "Invalid activity ID" });
+      }
+      
+      const activity = await storage.getActivity(activityId);
+      
+      if (!activity) {
+        return res.status(404).json({ message: "Activity not found" });
+      }
+      
+      // Only allow the user who owns the activity to mark it as read
+      if (activity.userId !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Update the activity to mark it as read
+      const updatedActivity = await storage.updateActivity(activityId, { isRead: true });
+      
+      res.json(updatedActivity);
+    } catch (error) {
+      console.error("Mark activity as read error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
   // Get messages for a specific project
   app.get("/api/messages/project/:id", async (req: AuthRequest, res: Response) => {
     try {

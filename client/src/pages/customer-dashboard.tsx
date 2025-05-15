@@ -62,7 +62,7 @@ export default function CustomerDashboard() {
     data: activities = [],
     isLoading: isLoadingActivities
   } = useQuery<Activity[]>({
-    queryKey: ['/api/activities/recent'],
+    queryKey: ['/api/activities/user'],
     enabled: !!user?.id && user?.role === "customer"
   });
 
@@ -343,16 +343,28 @@ export default function CustomerDashboard() {
                                   <Button 
                                     size="sm" 
                                     variant="outline"
-                                    onClick={() => {
-                                      // Mark activity as read
-                                      apiRequest('PATCH', `/api/activities/${activity.id}/read`);
-                                      
-                                      // Open project details or chat
-                                      if (activity.referenceType === 'project' && activity.referenceId) {
-                                        const project = projects.find(p => p.id === activity.referenceId);
-                                        if (project) {
-                                          handleOpenChat(project.id, project.name);
+                                    onClick={async () => {
+                                      try {
+                                        // Mark activity as read and update cache
+                                        await apiRequest('PATCH', `/api/activities/${activity.id}/read`);
+                                        
+                                        // Invalidate the activities cache to reflect the read status
+                                        queryClient.invalidateQueries({ queryKey: ['/api/activities/user'] });
+                                        
+                                        // Open project details or chat
+                                        if (activity.referenceType === 'project' && activity.referenceId) {
+                                          const project = projects.find(p => p.id === activity.referenceId);
+                                          if (project) {
+                                            handleOpenChat(project.id, project.name);
+                                          }
                                         }
+                                      } catch (error) {
+                                        console.error('Error marking activity as read:', error);
+                                        toast({
+                                          title: "Error",
+                                          description: "Failed to mark notification as read",
+                                          variant: "destructive",
+                                        });
                                       }
                                     }}
                                   >
