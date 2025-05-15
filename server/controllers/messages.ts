@@ -216,6 +216,40 @@ export function registerMessageRoutes(app: Express) {
     }
   });
 
+  // Mark activity as read
+  app.patch("/api/activities/:id/read", async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
+      const activityId = parseInt(req.params.id);
+      
+      if (isNaN(activityId)) {
+        return res.status(400).json({ message: 'Invalid activity ID' });
+      }
+      
+      const activity = await storage.getActivity(activityId);
+      
+      if (!activity) {
+        return res.status(404).json({ message: 'Activity not found' });
+      }
+      
+      // Only allow the user who owns the activity to mark it as read
+      if (activity.userId !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      
+      // Update the activity to mark it as read
+      const updatedActivity = await storage.updateActivity(activityId, { isRead: true });
+      
+      res.json(updatedActivity);
+    } catch (error) {
+      console.error('Mark activity as read error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
   // Mark message as read
   app.patch("/api/messages/:id/read", async (req: AuthRequest, res: Response) => {
     try {

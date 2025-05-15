@@ -52,6 +52,7 @@ export interface IStorage {
   getActivity(id: number): Promise<Activity | undefined>;
   getRecentActivities(limit?: number): Promise<Activity[]>;
   createActivity(activity: InsertActivity): Promise<Activity>;
+  updateActivity(id: number, updates: Partial<Activity>): Promise<Activity | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -200,6 +201,15 @@ export class DatabaseStorage implements IStorage {
   async createActivity(activity: InsertActivity): Promise<Activity> {
     const [newActivity] = await db.insert(activities).values(activity).returning();
     return newActivity;
+  }
+  
+  async updateActivity(id: number, updates: Partial<Activity>): Promise<Activity | undefined> {
+    const [updatedActivity] = await db
+      .update(activities)
+      .set(updates)
+      .where(eq(activities.id, id))
+      .returning();
+    return updatedActivity || undefined;
   }
 }
 

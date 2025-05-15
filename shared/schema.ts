@@ -119,6 +119,9 @@ export const activities = pgTable("activities", {
   description: text("description").notNull(),
   projectId: integer("project_id"),
   userId: integer("user_id").notNull(),
+  referenceId: integer("reference_id"),  // ID of the related item (project, message, etc.)
+  referenceType: text("reference_type"),  // Type of reference (project, message, etc.)
+  isRead: boolean("is_read").notNull().default(false),
   metadata: jsonb("metadata"),
   createdAt: timestamp("created_at").defaultNow(),
 });
