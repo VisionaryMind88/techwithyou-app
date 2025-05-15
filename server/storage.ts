@@ -203,7 +203,5 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-import { MemoryStorage } from './memory-storage';
-
-// Use MemoryStorage instead of DatabaseStorage until database connection issues are resolved
-export const storage = new MemoryStorage();
+// Use DatabaseStorage for data persistence
+export const storage = new DatabaseStorage();
