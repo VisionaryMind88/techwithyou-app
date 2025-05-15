@@ -58,7 +58,12 @@ function Router() {
 
   return (
     <Switch>
-      {!isAuthenticated && <Route path="*" component={AuthPage} />}
+      {!isAuthenticated && (
+        <>
+          <Route path="/direct-login" component={DirectLoginPage} />
+          <Route path="*" component={AuthPage} />
+        </>
+      )}
       
       {isAuthenticated && user?.role === "customer" && (
         <>
