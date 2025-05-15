@@ -1,9 +1,20 @@
 import { Request, Response, NextFunction } from "express";
 import { storage } from "../storage";
+import { Session } from "express-session";
 
-// Extended Request interface to include user property
+// Extend express-session to include our custom properties
+declare module "express-session" {
+  interface SessionData {
+    userId?: number;
+  }
+}
+
+// Extended Request interface to include user property and session data
 export interface AuthRequest extends Request {
   user?: any;
+  session: Session & {
+    userId?: number;
+  };
 }
 
 // Middleware to attach user to request if authenticated
@@ -16,23 +27,27 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
     '/api/health'
   ];
   
+  // Allow these routes without authentication
   if (noAuthRoutes.includes(req.path)) {
     return next();
   }
 
   try {
-    // In a real app, we would validate JWT or session
-    // For this demo, we'll check if there's a user ID in the headers
-    const userEmail = req.headers['x-user-email'] as string;
+    // Check for user in session
+    const userId = req.session?.userId;
     
-    if (!userEmail) {
+    if (!userId) {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
     // Find user in the database
-    const user = await storage.getUserByEmail(userEmail);
+    const user = await storage.getUser(userId);
     
     if (!user) {
+      // If user not found, clear the session
+      req.session.destroy((err) => {
+        if (err) console.error('Error destroying session:', err);
+      });
       return res.status(401).json({ message: 'User not found' });
     }
 

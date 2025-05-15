@@ -4,6 +4,9 @@ import { storage } from "../storage";
 import { loginUserSchema, insertUserSchema } from "@shared/schema";
 import { AuthRequest } from "../middleware/auth";
 
+// Extend express-session
+import "express-session";
+
 export function registerAuthRoutes(app: Express) {
   // Check if email exists
   app.get("/api/auth/check-email", async (req: Request, res: Response) => {
@@ -64,7 +67,7 @@ export function registerAuthRoutes(app: Express) {
   });
 
   // Login user
-  app.post("/api/auth/login", async (req: Request, res: Response) => {
+  app.post("/api/auth/login", async (req: AuthRequest, res: Response) => {
     try {
       const { email, password } = req.body;
       
@@ -94,6 +97,18 @@ export function registerAuthRoutes(app: Express) {
         }
       }
       
+      // Set user ID in session
+      req.session.userId = user.id;
+      
+      // Create activity record for login
+      await storage.createActivity({
+        type: 'login',
+        description: `User logged in (${user.role})`,
+        userId: user.id,
+        projectId: null,
+        metadata: null,
+      });
+      
       // Return user without password
       const { password: _, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
@@ -106,13 +121,11 @@ export function registerAuthRoutes(app: Express) {
   // Get current user
   app.get("/api/auth/user", async (req: AuthRequest, res: Response) => {
     try {
-      const { email } = req.query;
-      
-      if (!email || typeof email !== 'string') {
-        return res.status(400).json({ message: 'Email parameter is required' });
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ message: 'Not authenticated' });
       }
       
-      const user = await storage.getUserByEmail(email);
+      const user = await storage.getUser(req.user.id);
       
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
@@ -123,6 +136,35 @@ export function registerAuthRoutes(app: Express) {
       res.json(userWithoutPassword);
     } catch (error) {
       console.error('Get user error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
+  // Logout user
+  app.post("/api/auth/logout", async (req: AuthRequest, res: Response) => {
+    try {
+      // Create activity record for logout if user is logged in
+      if (req.user && req.user.id) {
+        await storage.createActivity({
+          type: 'logout',
+          description: `User logged out (${req.user.role})`,
+          userId: req.user.id,
+          projectId: null,
+          metadata: null,
+        });
+      }
+      
+      // Destroy session
+      req.session.destroy((err) => {
+        if (err) {
+          console.error('Error destroying session:', err);
+          return res.status(500).json({ message: 'Internal server error' });
+        }
+        
+        res.json({ message: 'Logged out successfully' });
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
