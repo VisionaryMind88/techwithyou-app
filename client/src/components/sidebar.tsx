@@ -2,6 +2,7 @@ import { Home, FolderOpen, MessageSquare, Settings, LogOut, X } from "lucide-rea
 import { useAuth } from "@/context/auth-context";
 import { Logo } from "@/components/logo";
 import { Link, useLocation } from "wouter";
+import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   isMobile?: boolean;
@@ -10,6 +11,7 @@ interface SidebarProps {
 
 export function Sidebar({ isMobile = false, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
+  const [location] = useLocation();
   
   const handleLogout = () => {
     logout();
@@ -19,6 +21,12 @@ export function Sidebar({ isMobile = false, onClose }: SidebarProps) {
     if (isMobile && onClose) {
       onClose();
     }
+  };
+  
+  const isActive = (path: string) => {
+    if (path === "/" && location === "/") return true;
+    if (path !== "/" && location.startsWith(path)) return true;
+    return false;
   };
 
   return (
@@ -56,36 +64,48 @@ export function Sidebar({ isMobile = false, onClose }: SidebarProps) {
           <li>
             <Link 
               to="/" 
-              className="flex items-center p-2 rounded-md hover:bg-gray-100 text-gray-700"
+              className={cn(
+                "flex items-center p-2 rounded-md hover:bg-gray-100 text-gray-700",
+                isActive("/") && "bg-blue-50 text-blue-700 font-medium"
+              )}
             >
-              <Home className="h-5 w-5 mr-3" />
+              <Home className={cn("h-5 w-5 mr-3", isActive("/") && "text-blue-700")} />
               Dashboard
             </Link>
           </li>
           <li>
             <Link 
               to="/projects" 
-              className="flex items-center p-2 rounded-md hover:bg-gray-100 text-gray-700"
+              className={cn(
+                "flex items-center p-2 rounded-md hover:bg-gray-100 text-gray-700",
+                isActive("/projects") && "bg-blue-50 text-blue-700 font-medium"
+              )}
             >
-              <FolderOpen className="h-5 w-5 mr-3" />
+              <FolderOpen className={cn("h-5 w-5 mr-3", isActive("/projects") && "text-blue-700")} />
               Projects
             </Link>
           </li>
           <li>
             <Link 
               to="/messages" 
-              className="flex items-center p-2 rounded-md hover:bg-gray-100 text-gray-700"
+              className={cn(
+                "flex items-center p-2 rounded-md hover:bg-gray-100 text-gray-700",
+                isActive("/messages") && "bg-blue-50 text-blue-700 font-medium"
+              )}
             >
-              <MessageSquare className="h-5 w-5 mr-3" />
+              <MessageSquare className={cn("h-5 w-5 mr-3", isActive("/messages") && "text-blue-700")} />
               Messages
             </Link>
           </li>
           <li>
             <Link 
               to="/settings" 
-              className="flex items-center p-2 rounded-md hover:bg-gray-100 text-gray-700"
+              className={cn(
+                "flex items-center p-2 rounded-md hover:bg-gray-100 text-gray-700",
+                isActive("/settings") && "bg-blue-50 text-blue-700 font-medium"
+              )}
             >
-              <Settings className="h-5 w-5 mr-3" />
+              <Settings className={cn("h-5 w-5 mr-3", isActive("/settings") && "text-blue-700")} />
               Settings
             </Link>
           </li>

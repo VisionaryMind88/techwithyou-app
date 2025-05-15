@@ -81,7 +81,10 @@ function Router() {
     return (
       <Switch>
         <Route path="/" component={CustomerDashboard} />
-        <Route path="/project/:id" component={ProjectDetail} />
+        <Route path="/projects" component={CustomerDashboard} />
+        <Route path="/projects/:id" component={ProjectDetail} />
+        <Route path="/messages" component={CustomerDashboard} />
+        <Route path="/settings" component={CustomerDashboard} />
         <Route component={NotFound} />
       </Switch>
     );
@@ -91,7 +94,10 @@ function Router() {
     return (
       <Switch>
         <Route path="/" component={AdminDashboard} />
-        <Route path="/project/:id" component={ProjectDetail} />
+        <Route path="/projects" component={AdminDashboard} />
+        <Route path="/projects/:id" component={ProjectDetail} />
+        <Route path="/messages" component={AdminDashboard} />
+        <Route path="/settings" component={AdminDashboard} />
         <Route component={NotFound} />
       </Switch>
     );
