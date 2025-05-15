@@ -143,10 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       console.log("Signing in with email:", email, "Role:", userRole, "Remember me:", rememberMe);
       
-      // First authenticate with Firebase
-      await signInWithEmail(email, password);
-      
-      // Then make a request to our server to handle role-based auth and remember me
+      // Make a request to our server to handle authentication
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -167,19 +164,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       const userData = await response.json();
-      
-      // The user state will be updated by the onAuthStateChanged listener
-      // but we can also update it directly here for faster UI feedback
       setUser(userData);
       
       console.log("Login successful:", userData);
     } catch (error: any) {
       console.error('Sign in error:', error);
-      const errorMessage = error.code === 'auth/user-not-found' 
-        ? 'User not found. Please check your email or register.'
-        : error.code === 'auth/wrong-password'
-          ? 'Incorrect password. Please try again.'
-          : error.message || 'Failed to sign in. Please try again.';
+      const errorMessage = error.message || 'Failed to sign in. Please try again.';
       
       toast({
         title: "Authentication Error",
