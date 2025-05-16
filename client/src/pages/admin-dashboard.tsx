@@ -19,6 +19,7 @@ import { OnboardingTour, adminTourSteps } from "@/components/onboarding-tour";
 import { useAuth } from "@/context/auth-context";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Project, User, Message, Activity as BaseActivity } from "@shared/schema";
 import { FloatingActionMenu } from "@/components/mobile/floating-action-menu";
 import { motion, AnimatePresence } from "framer-motion";
@@ -48,6 +49,7 @@ export default function AdminDashboard() {
   const [showTour, setShowTour] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [, setLocation] = useLocation();
 
   // Check if onboarding tour should be shown
@@ -395,7 +397,7 @@ export default function AdminDashboard() {
             {/* Recent Project Requests */}
             <div className="mb-6" id="project-requests-section">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-800">Recent Project Requests</h2>
+                <h2 className="text-xl font-semibold text-gray-800">{t('dashboard.recentProjectRequests') || "Recent Project Requests"}</h2>
                 <Button variant="link" className="text-primary-600 p-0 h-auto">View All</Button>
               </div>
               
@@ -413,7 +415,7 @@ export default function AdminDashboard() {
               {/* Customer Activity */}
               <div id="activity-section">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-gray-800">Customer Activity</h2>
+                  <h2 className="text-xl font-semibold text-gray-800">{t('dashboard.customerActivity') || "Customer Activity"}</h2>
                   <Button variant="link" className="text-primary-600 p-0 h-auto">View All</Button>
                 </div>
                 
@@ -426,7 +428,7 @@ export default function AdminDashboard() {
               {/* Recent Messages */}
               <div id="admin-messages-section">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-gray-800">Recent Messages</h2>
+                  <h2 className="text-xl font-semibold text-gray-800">{t('dashboard.recentMessages') || "Recent Messages"}</h2>
                   <Button variant="link" className="text-primary-600 p-0 h-auto">View All</Button>
                 </div>
                 
@@ -442,7 +444,7 @@ export default function AdminDashboard() {
             <div className="mb-6">
               <div className="flex items-center mb-4">
                 <BarChart className="h-5 w-5 mr-2 text-primary-600" />
-                <h2 className="text-xl font-semibold text-gray-800">Advanced Analytics</h2>
+                <h2 className="text-xl font-semibold text-gray-800">{t('dashboard.advancedAnalytics') || "Advanced Analytics"}</h2>
               </div>
               
               <Tabs defaultValue="projects" className="w-full mb-8">
