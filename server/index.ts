@@ -14,18 +14,19 @@ app.use(cookieParser());
 // Create PostgreSQL session store
 const PgSession = connectPgSimple(session);
 
-// Configure session middleware
+// Configure session middleware with more robust settings
 app.use(
   session({
     store: new PgSession({
       pool,
       tableName: 'user_sessions',
       createTableIfMissing: true,
+      pruneSessionInterval: 60 // Prune expired sessions every 60 seconds
     }),
-    secret: process.env.SESSION_SECRET || 'tech-with-you-secret',
-    resave: false, // Only save session when modified
+    secret: process.env.SESSION_SECRET || 'tech-with-you-secret-more-secure-key',
+    resave: true, // Always save on requests to ensure we don't lose the session
     rolling: true, // Reset expiration on activity
-    saveUninitialized: false, // Don't create session until something stored
+    saveUninitialized: true, // Create session immediately to track even non-authenticated
     name: 'techwithyou.sid', // Custom cookie name
     cookie: { 
       secure: false, // Set to false even in production for testing
@@ -37,11 +38,23 @@ app.use(
   })
 );
 
-// Debug middleware for session
+// Session maintenance middleware - always touch the session to prevent expiration
 app.use((req: any, res, next) => {
-  if (req.path === '/api/auth/user' || req.path === '/api/auth/login') {
+  if (req.session) {
+    req.session.touch(); // Force touch session on every request
+    
+    // For API requests, also ensure the session is saved
+    if (req.path.startsWith('/api/')) {
+      req.session.save();
+    }
+  }
+  
+  // Debug middleware for critical paths
+  if (req.path === '/api/auth/user' || req.path === '/api/auth/login' || 
+      req.path === '/api/messages' || req.path === '/api/logout') {
     console.log('Session check:', {
       path: req.path,
+      method: req.method,
       sessionId: req.sessionID,
       hasSession: !!req.session,
       userId: req.session?.userId,
