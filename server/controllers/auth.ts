@@ -107,6 +107,56 @@ export function registerAuthRoutes(app: Express) {
       
       // Create user
       const newUser = await storage.createUser(userData);
+
+      // Send welcome message from admin to the new user
+      try {
+        // Find the admin user
+        const adminUsers = await storage.getAllUsers();
+        const adminUser = adminUsers.find(user => user.role === 'admin');
+        
+        if (adminUser) {
+          // Get user preferred language
+          const userLanguage = newUser.language || 'nl';
+          
+          // Create welcome message based on language
+          const welcomeContent = userLanguage === 'en' 
+            ? `Welcome to Tech With You! If you need help with your project or have any questions, don't hesitate to contact us. We're here to help you!`
+            : `Welkom bij Tech With You! Als je hulp nodig hebt met je project of vragen hebt, aarzel dan niet om contact met ons op te nemen. We staan voor je klaar om te helpen!`;
+            
+          const welcomeSubject = userLanguage === 'en'
+            ? 'Welcome to Tech With You'
+            : 'Welkom bij Tech With You';
+            
+          // Create welcome message
+          const welcomeMessage = await storage.createMessage({
+            senderId: adminUser.id,
+            recipientId: newUser.id,
+            content: welcomeContent,
+            subject: welcomeSubject,
+            projectId: null,
+            isRead: false
+          });
+          
+          // Create activity for this welcome message
+          await storage.createActivity({
+            type: 'message_received',
+            description: userLanguage === 'en' ? 'Welcome message received' : 'Welkomstbericht ontvangen',
+            userId: newUser.id,
+            projectId: null,
+            isRead: false,
+            referenceId: welcomeMessage.id,
+            referenceType: 'message',
+            metadata: { messageType: 'welcome' }
+          });
+          
+          console.log(`Welcome message sent to new user ${newUser.email} from admin`);
+        } else {
+          console.log('No admin user found to send welcome message');
+        }
+      } catch (error) {
+        console.error('Error sending welcome message:', error);
+        // Don't fail registration if welcome message fails
+      }
       
       // Return user without password
       const { password, ...userWithoutPassword } = newUser;
