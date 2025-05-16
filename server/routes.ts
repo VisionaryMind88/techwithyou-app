@@ -220,6 +220,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
     
+    // Move the admin routes before any wildcard routes
+    
+    // Admin endpoint to get all payments
+    app.get("/api/payments/admin", authMiddleware, async (req, res) => {
+      try {
+        if (!req.user) {
+          return res.status(401).json({ message: "Not authenticated" });
+        }
+
+        if (req.user.role !== "admin") {
+          return res.status(403).json({ message: "Forbidden: Admin access required" });
+        }
+        
+        const payments = await storage.getAllPayments();
+        res.json({ payments });
+      } catch (error: any) {
+        console.error("Error getting payments:", error);
+        res.status(500).json({ 
+          message: "Error getting payments", 
+          error: error.message 
+        });
+      }
+    });
+    
     // Endpoint to get payment status
     app.get("/api/payments/:id", authMiddleware, async (req, res) => {
       try {
@@ -245,10 +269,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
     
+    // IMPORTANT: This route must come BEFORE the /api/payments/:id route
     // Endpoint for admin to get all payments
     app.get("/api/payments/admin", authMiddleware, async (req, res) => {
       try {
-        if (req.user?.role !== "admin") {
+        if (!req.user) {
+          return res.status(401).json({ message: "Not authenticated" });
+        }
+
+        if (req.user.role !== "admin") {
           return res.status(403).json({ message: "Forbidden: Admin access required" });
         }
         
