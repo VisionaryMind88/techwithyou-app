@@ -181,9 +181,9 @@ export class DatabaseStorage implements IStorage {
     // Get the root file ID (might be parent or parent's parent)
     const rootFileId = parentFile.parentFileId || parentFile.id;
     
-    // Get the highest version number
+    // Get the highest version number using SQL aggregate
     const [highestVersion] = await db.select({ 
-      maxVersion: max(files.versionNumber) 
+      maxVersion: sql`MAX(${files.versionNumber})` 
     }).from(files).where(
       or(
         eq(files.id, rootFileId),
