@@ -187,9 +187,14 @@ export function AdminDashboardStats({ stats, isLoading = false }: AdminDashboard
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 + index * 0.1 }}
           >
-            <span className={`flex items-center ${
-              stat.change.isPositive ? "text-green-600" : "text-red-600"
-            }`}>
+            <motion.span 
+              className={`flex items-center ${
+                stat.change.isPositive ? "text-green-600" : "text-red-600"
+              }`}
+              whileHover={{ 
+                scale: 1.1,
+                transition: { duration: 0.2 }
+              }}>
               <motion.div
                 animate={{ 
                   y: [0, stat.change.isPositive ? -3 : 3, 0],
@@ -207,9 +212,22 @@ export function AdminDashboardStats({ stats, isLoading = false }: AdminDashboard
                   }`}
                 />
               </motion.div>
-              {stat.change.value}%
-            </span>
-            <span className="text-gray-500 ml-2">{stat.change.period}</span>
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 + index * 0.1 }}
+              >
+                {stat.change.value}%
+              </motion.span>
+            </motion.span>
+            <motion.span 
+              className="text-gray-500 ml-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 + index * 0.1 }}
+            >
+              {stat.change.period}
+            </motion.span>
           </motion.div>
         </motion.div>
       ))}
