@@ -27,6 +27,14 @@ export function Sidebar({ isMobile = false, onClose, userRole }: SidebarProps & 
     }
   };
   
+  // Handle navigation without closing sidebar
+  const handleNavigation = (path: string) => {
+    // Only close if it's mobile view
+    if (isMobile && onClose) {
+      onClose();
+    }
+  };
+  
   const isActive = (path: string) => {
     if (path === "/" && location === "/") return true;
     if (path !== "/" && location.startsWith(path)) return true;
@@ -114,77 +122,87 @@ export function Sidebar({ isMobile = false, onClose, userRole }: SidebarProps & 
       >
         <motion.ul className="space-y-2">
           <motion.li variants={staggerItem}>
-            <Link 
-              to="/" 
+            <div 
+              onClick={() => handleNavigation("/")}
               className={cn(
-                "flex items-center p-2 rounded-md hover:bg-blue-500 text-white",
+                "flex items-center p-2 rounded-md hover:bg-blue-500 text-white cursor-pointer",
                 isActive("/") && "bg-blue-700 text-white font-medium"
               )}
             >
-              <AnimatedIcon className="mr-3">
-                <Home className={cn("h-5 w-5", isActive("/") && "text-blue-100")} />
-              </AnimatedIcon>
-              Dashboard
-            </Link>
+              <Link to="/" className="flex items-center w-full">
+                <AnimatedIcon className="mr-3">
+                  <Home className={cn("h-5 w-5", isActive("/") && "text-blue-100")} />
+                </AnimatedIcon>
+                Dashboard
+              </Link>
+            </div>
           </motion.li>
           <motion.li variants={staggerItem}>
-            <Link 
-              to="/projects" 
+            <div 
+              onClick={() => handleNavigation("/projects")}
               className={cn(
-                "flex items-center p-2 rounded-md hover:bg-blue-500 text-white",
+                "flex items-center p-2 rounded-md hover:bg-blue-500 text-white cursor-pointer",
                 isActive("/projects") && "bg-blue-700 text-white font-medium"
               )}
             >
-              <AnimatedIcon className="mr-3">
-                <FolderOpen className={cn("h-5 w-5", isActive("/projects") && "text-blue-100")} />
-              </AnimatedIcon>
-              Projects
-            </Link>
+              <Link to="/projects" className="flex items-center w-full">
+                <AnimatedIcon className="mr-3">
+                  <FolderOpen className={cn("h-5 w-5", isActive("/projects") && "text-blue-100")} />
+                </AnimatedIcon>
+                Projects
+              </Link>
+            </div>
           </motion.li>
           <motion.li variants={staggerItem}>
-            <Link 
-              to="/messages" 
+            <div 
+              onClick={() => handleNavigation("/messages")}
               className={cn(
-                "flex items-center p-2 rounded-md hover:bg-blue-500 text-white",
+                "flex items-center p-2 rounded-md hover:bg-blue-500 text-white cursor-pointer",
                 isActive("/messages") && "bg-blue-700 text-white font-medium"
               )}
             >
-              <AnimatedIcon className="mr-3">
-                <MessageSquare className={cn("h-5 w-5", isActive("/messages") && "text-blue-100")} />
-              </AnimatedIcon>
-              Messages
-            </Link>
+              <Link to="/messages" className="flex items-center w-full">
+                <AnimatedIcon className="mr-3">
+                  <MessageSquare className={cn("h-5 w-5", isActive("/messages") && "text-blue-100")} />
+                </AnimatedIcon>
+                Messages
+              </Link>
+            </div>
           </motion.li>
           <motion.li variants={staggerItem}>
-            <Link 
-              to="/settings" 
+            <div 
+              onClick={() => handleNavigation("/settings")}
               className={cn(
-                "flex items-center p-2 rounded-md hover:bg-blue-500 text-white",
+                "flex items-center p-2 rounded-md hover:bg-blue-500 text-white cursor-pointer",
                 isActive("/settings") && "bg-blue-700 text-white font-medium"
               )}
             >
-              <AnimatedIcon className="mr-3">
-                <Settings className={cn("h-5 w-5", isActive("/settings") && "text-blue-100")} />
-              </AnimatedIcon>
-              Settings
-            </Link>
+              <Link to="/settings" className="flex items-center w-full">
+                <AnimatedIcon className="mr-3">
+                  <Settings className={cn("h-5 w-5", isActive("/settings") && "text-blue-100")} />
+                </AnimatedIcon>
+                Settings
+              </Link>
+            </div>
           </motion.li>
           
           {/* Users link - only visible for admin */}
           {(userRole === "admin" || user?.role === "admin") && (
             <motion.li variants={staggerItem}>
-              <Link 
-                to="/users" 
+              <div 
+                onClick={() => handleNavigation("/users")}
                 className={cn(
-                  "flex items-center p-2 rounded-md hover:bg-blue-500 text-white",
+                  "flex items-center p-2 rounded-md hover:bg-blue-500 text-white cursor-pointer",
                   isActive("/users") && "bg-blue-700 text-white font-medium"
                 )}
               >
-                <AnimatedIcon className="mr-3">
-                  <Users className={cn("h-5 w-5", isActive("/users") && "text-blue-100")} />
-                </AnimatedIcon>
-                Users
-              </Link>
+                <Link to="/users" className="flex items-center w-full">
+                  <AnimatedIcon className="mr-3">
+                    <Users className={cn("h-5 w-5", isActive("/users") && "text-blue-100")} />
+                  </AnimatedIcon>
+                  Users
+                </Link>
+              </div>
             </motion.li>
           )}
           
