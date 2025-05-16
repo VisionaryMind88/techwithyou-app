@@ -11,7 +11,7 @@ export default function SkipToContent() {
         { id: 'main-content', label: 'Skip to main content' },
         { id: 'project-details', label: 'Skip to project details' },
         { id: 'file-section', label: 'Skip to files' },
-        { id: 'message-section', label: 'Skip to messages' }
+        { id: 'messages-section', label: 'Skip to messages' }
       ];
     } else if (location.includes('/dashboard') || location === '/') {
       return [

@@ -339,11 +339,12 @@ export default function ProjectDetail() {
                 </div>
               </div>
               
-              <div className="mt-4 md:mt-0 flex space-x-3">
+              <div className="mt-4 md:mt-0 flex space-x-3" id="messages-section">
                 <Button 
                   variant="outline" 
                   className="flex items-center"
                   onClick={() => setIsChatModalOpen(true)}
+                  aria-label="Open project messages"
                 >
                   <MessageCircle className="h-4 w-4 mr-2" />
                   Messages
