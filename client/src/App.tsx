@@ -13,6 +13,7 @@ import ProjectDetail from "@/pages/project-detail";
 import ProjectsPage from "@/pages/projects";
 import MessagesPage from "@/pages/messages";
 import SettingsPage from "@/pages/settings";
+import UsersPage from "@/pages/users";
 import { useAuth, AuthProvider } from "./context/auth-context";
 import { ThemeProvider } from "next-themes";
 import { handleAuthRedirect } from "./lib/firebase";

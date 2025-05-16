@@ -2,7 +2,7 @@ import { Sidebar } from "@/components/sidebar";
 import { useAuth } from "@/context/auth-context";
 import { useQuery } from "@tanstack/react-query";
 import { Message, User } from "@shared/schema";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -23,6 +23,14 @@ export default function MessagesPage() {
   const { toast } = useToast();
 
   // Fetch recent messages
+  // Force authenticate before rendering
+  useEffect(() => {
+    if (!user) {
+      // This will redirect to auth page via the Router component's logic
+      return;
+    }
+  }, [user]);
+
   const { 
     data: messagesData = [], 
     isLoading: isLoadingMessages,

@@ -1,4 +1,4 @@
-import { Home, FolderOpen, MessageSquare, Settings, LogOut, X } from "lucide-react";
+import { Home, FolderOpen, MessageSquare, Settings, LogOut, X, Users } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { Logo } from "@/components/logo";
 import { Link, useLocation } from "wouter";
@@ -9,7 +9,7 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-export function Sidebar({ isMobile = false, onClose }: SidebarProps) {
+export function Sidebar({ isMobile = false, onClose, userRole }: SidebarProps & { userRole?: string }) {
   const { user, logout } = useAuth();
   const [location] = useLocation();
   
@@ -109,6 +109,22 @@ export function Sidebar({ isMobile = false, onClose }: SidebarProps) {
               Settings
             </Link>
           </li>
+          
+          {/* Users link - only visible for admin */}
+          {(userRole === "admin" || user?.role === "admin") && (
+            <li>
+              <Link 
+                to="/users" 
+                className={cn(
+                  "flex items-center p-2 rounded-md hover:bg-gray-100 text-gray-700",
+                  isActive("/users") && "bg-blue-50 text-blue-700 font-medium"
+                )}
+              >
+                <Users className={cn("h-5 w-5 mr-3", isActive("/users") && "text-blue-700")} />
+                Users
+              </Link>
+            </li>
+          )}
         </ul>
       </nav>
       

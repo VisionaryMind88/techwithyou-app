@@ -108,7 +108,6 @@ export default function UsersPage() {
       {/* Sidebar for desktop */}
       <Sidebar 
         isMobile={false} 
-        isOpen={true} 
         onClose={() => {}} 
         userRole="admin" 
       />
@@ -116,7 +115,6 @@ export default function UsersPage() {
       {/* Mobile Sidebar */}
       <Sidebar 
         isMobile={true} 
-        isOpen={isMobileSidebarOpen} 
         onClose={() => setIsMobileSidebarOpen(false)} 
         userRole="admin"
       />
