@@ -128,6 +128,9 @@ export function AdminDashboardStats({ stats, isLoading = false }: AdminDashboard
             background: `linear-gradient(135deg, white 0%, ${stat.bgColor} 100%)`,
             transition: { type: "spring", stiffness: 300 }
           }}
+          role="region"
+          aria-label={`${stat.label} statistics`}
+          tabIndex={0}
         >
           <div className="flex items-center justify-between">
             <div>
