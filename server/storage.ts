@@ -51,6 +51,7 @@ export interface IStorage {
   // Activities
   getActivity(id: number): Promise<Activity | undefined>;
   getRecentActivities(limit?: number): Promise<Activity[]>;
+  getUserActivities(userId: number, limit?: number): Promise<Activity[]>;
   createActivity(activity: InsertActivity): Promise<Activity>;
   updateActivity(id: number, updates: Partial<Activity>): Promise<Activity | undefined>;
 }
@@ -194,6 +195,15 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(activities)
+      .orderBy(desc(activities.createdAt))
+      .limit(limit);
+  }
+  
+  async getUserActivities(userId: number, limit: number = 10): Promise<Activity[]> {
+    return await db
+      .select()
+      .from(activities)
+      .where(eq(activities.userId, userId))
       .orderBy(desc(activities.createdAt))
       .limit(limit);
   }
