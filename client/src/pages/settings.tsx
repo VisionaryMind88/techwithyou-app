@@ -99,32 +99,54 @@ export default function SettingsPage() {
     
     setIsUploading(true);
     
+    // Create a FileReader to read the file as a data URL
     const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        if (event.target?.result) {
-          // Base64 encoded string
-          const base64Image = event.target.result.toString();
-          setProfilePicture(base64Image);
-          
-          // You could upload to server here or wait for the form submission
-          setIsUploading(false);
-          
-          toast({
-            title: "Image ready",
-            description: "Profile picture is ready to be saved. Click 'Save Changes' to update your profile.",
-          });
-        }
-      } catch (error) {
-        setIsUploading(false);
+    
+    reader.onload = (event) => {
+      if (!event.target?.result) {
         toast({
           title: "Upload failed",
-          description: "Failed to process the image. Please try again with a different image.",
+          description: "Could not read the image file.",
+          variant: "destructive",
+        });
+        setIsUploading(false);
+        return;
+      }
+      
+      const dataUrl = event.target.result.toString();
+      
+      // Store in state for UI
+      setProfilePicture(dataUrl);
+      
+      // Also store in localStorage (temporary solution until database is updated)
+      try {
+        localStorage.setItem('profilePicture', dataUrl);
+        
+        toast({
+          title: "Profile picture updated",
+          description: "Your profile picture has been updated in the browser.",
+        });
+      } catch (error) {
+        toast({
+          title: "Storage error",
+          description: "Could not store the profile picture (it might be too large).",
           variant: "destructive",
         });
       }
+      
+      setIsUploading(false);
     };
     
+    reader.onerror = () => {
+      toast({
+        title: "Upload failed",
+        description: "There was an error reading the file.",
+        variant: "destructive",
+      });
+      setIsUploading(false);
+    };
+    
+    // Read the file as a data URL (base64 encoded string)
     reader.readAsDataURL(file);
   };
 
