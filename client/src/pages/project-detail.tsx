@@ -279,9 +279,11 @@ export default function ProjectDetail() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="flex">
-        {/* Sidebar - Desktop */}
-        <div className="hidden md:block fixed inset-y-0 left-0 z-10">
-          <Sidebar />
+        {/* Sidebar - Desktop - Now always visible and fixed */}
+        <div className="hidden md:block fixed inset-y-0 left-0 z-50 h-full">
+          <div className="h-full">
+            <Sidebar />
+          </div>
         </div>
 
         {/* Sidebar - Mobile */}

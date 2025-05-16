@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/context/auth-context";
 import { Logo } from "@/components/logo";
 import { useToast } from "@/hooks/use-toast";
-import { motion } from "framer-motion";
 
 interface AuthFormProps {
   onSuccessfulAuth?: () => void;
@@ -236,72 +235,28 @@ export function AuthForm({ onSuccessfulAuth }: AuthFormProps) {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto overflow-hidden">
+    <Card className="w-full max-w-md mx-auto">
       <CardHeader className="space-y-2 text-center">
-        <motion.div 
-          className="flex justify-center mb-4"
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
+        <div className="flex justify-center mb-4">
           <Logo size="lg" />
-        </motion.div>
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <CardTitle className="text-2xl">Welcome</CardTitle>
-          <CardDescription>
-            Sign in to your account or create a new one
-          </CardDescription>
-        </motion.div>
+        </div>
+        <CardTitle className="text-2xl">Welcome</CardTitle>
+        <CardDescription>
+          Sign in to your account or create a new one
+        </CardDescription>
       </CardHeader>
       
       <CardContent>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
+        <Tabs 
+          defaultValue="login" 
+          value={activeTab} 
+          onValueChange={(value) => setActiveTab(value as "login" | "register")}
+          className="w-full"
         >
-          <Tabs 
-            defaultValue="login" 
-            value={activeTab} 
-            onValueChange={(value) => setActiveTab(value as "login" | "register")}
-            className="w-full"
-          >
-            <TabsList className="grid w-full grid-cols-2 mb-8">
-              <TabsTrigger 
-                value="login" 
-                className="relative overflow-hidden transition-all duration-300"
-              >
-                Login
-                {activeTab === "login" && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                  />
-                )}
-              </TabsTrigger>
-              <TabsTrigger 
-                value="register"
-                className="relative overflow-hidden transition-all duration-300"
-              >
-                Register
-                {activeTab === "register" && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                  />
-                )}
-              </TabsTrigger>
-            </TabsList>
+          <TabsList className="grid w-full grid-cols-2 mb-8">
+            <TabsTrigger value="login">Login</TabsTrigger>
+            <TabsTrigger value="register">Register</TabsTrigger>
+          </TabsList>
           
           <TabsContent value="login" className="space-y-4">
             <form onSubmit={handleLogin}>
@@ -516,7 +471,6 @@ export function AuthForm({ onSuccessfulAuth }: AuthFormProps) {
             GitHub
           </Button>
         </div>
-          </motion.div>
       </CardContent>
       
       <CardFooter className="flex flex-col space-y-2">
