@@ -120,10 +120,12 @@ export function AdminDashboardStats({ stats, isLoading = false }: AdminDashboard
       {statItems.map((stat, index) => (
         <motion.div 
           key={index} 
-          className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+          className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-all relative overflow-hidden"
           variants={staggerItem}
           whileHover={{ 
             y: -5,
+            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
+            background: `linear-gradient(135deg, white 0%, ${stat.bgColor} 100%)`,
             transition: { type: "spring", stiffness: 300 }
           }}
         >
@@ -151,17 +153,32 @@ export function AdminDashboardStats({ stats, isLoading = false }: AdminDashboard
               </motion.p>
             </div>
             <motion.div 
-              className={`p-3 rounded-full ${stat.bgColor} ${stat.color}`}
+              className={`p-3 rounded-full ${stat.bgColor} ${stat.color} relative z-10`}
               whileHover={{ 
-                scale: 1.1,
-                rotate: 5,
-                transition: { duration: 0.2 }
+                scale: 1.15,
+                rotate: 10,
+                boxShadow: "0 0 12px rgba(0, 0, 0, 0.1)",
+                transition: { 
+                  type: "spring", 
+                  stiffness: 400,
+                  damping: 10
+                }
               }}
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.3 + index * 0.1 }}
             >
-              <stat.icon className="text-xl" />
+              <motion.div
+                animate={{ rotate: [0, 5, 0, -5, 0] }}
+                transition={{ 
+                  duration: 5,
+                  repeat: Infinity,
+                  repeatType: "reverse",
+                  ease: "easeInOut"
+                }}
+              >
+                <stat.icon className="text-xl" />
+              </motion.div>
             </motion.div>
           </div>
           <motion.div 

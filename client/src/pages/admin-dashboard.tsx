@@ -337,134 +337,46 @@ export default function AdminDashboard() {
                   >
                     <Bell className="h-5 w-5" />
                     {activitiesData.filter(a => !a.isRead).length > 0 && (
-                      <span className="absolute top-0 right-0 -mt-1 -mr-1 px-1.5 py-0.5 text-xs font-medium bg-red-500 text-white rounded-full">
+                      <motion.span 
+                        className="absolute top-0 right-0 -mt-1 -mr-1 px-1.5 py-0.5 text-xs font-medium bg-red-500 text-white rounded-full"
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 15 }}
+                      >
                         {activitiesData.filter(a => !a.isRead).length}
-                      </span>
+                      </motion.span>
                     )}
                   </button>
                   
-                  {/* Notifications Dropdown */}
-                  <AnimatePresence>
-                    {isNotificationsOpen && (
-                      <motion.div 
-                        className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-50 max-h-96 overflow-auto notifications-dropdown"
-                        initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
-                      >
-                        <motion.div 
-                          className="px-4 py-2 border-b border-gray-100"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: 0.1 }}
-                        >
-                          <h3 className="text-sm font-semibold text-gray-700">Notifications</h3>
-                        </motion.div>
-                        
-                        {isLoadingActivities ? (
-                          <motion.div 
-                            className="px-4 py-2"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.1 }}
-                          >
-                            <Skeleton className="h-4 w-full mb-2" />
-                            <Skeleton className="h-4 w-3/4" />
-                          </motion.div>
-                        ) : activitiesData.length === 0 ? (
-                          <motion.div 
-                            className="px-4 py-3 text-sm text-gray-500 text-center"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.1 }}
-                          >
-                            No notifications
-                          </motion.div>
-                        ) : (
-                          <motion.div
-                            variants={staggerContainer}
-                            initial="hidden"
-                            animate="visible"
-                          >
-                            {activitiesData.map((activity, index) => (
-                              <motion.div 
-                                key={activity.id} 
-                                className={`px-4 py-3 hover:bg-gray-50 border-l-4 cursor-pointer ${activity.isRead ? 'border-transparent' : 'border-blue-500'}`}
-                                onClick={() => markActivityAsRead(activity.id)}
-                                variants={staggerItem}
-                                custom={index}
-                                whileHover={{ 
-                                  x: 5,
-                                  backgroundColor: "rgba(243, 244, 246, 0.8)",
-                                  transition: { duration: 0.1 }
-                                }}
-                              >
-                                <div className="flex items-start">
-                                  <motion.div
-                                    initial={{ scale: 0.8, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    transition={{ delay: 0.1 + index * 0.05 }}
-                                  >
-                                    <ActivityIcon className="h-5 w-5 mr-3 text-blue-500 mt-0.5" />
-                                  </motion.div>
-                                  <div>
-                                    <motion.p 
-                                      className="text-sm text-gray-800"
-                                      initial={{ opacity: 0, x: -5 }}
-                                      animate={{ opacity: 1, x: 0 }}
-                                      transition={{ delay: 0.2 + index * 0.05 }}
-                                    >
-                                      {activity.description}
-                                    </motion.p>
-                                    <motion.p 
-                                      className="text-xs text-gray-500 mt-1"
-                                      initial={{ opacity: 0 }}
-                                      animate={{ opacity: 1 }}
-                                      transition={{ delay: 0.3 + index * 0.05 }}
-                                    >
-                                      {format(new Date(activity.createdAt), 'MMM d, yyyy · h:mm a')}
-                                    </motion.p>
-                                  </div>
-                                </div>
-                              </motion.div>
-                            ))}
-                          </motion.div>
-                        )}
-                        
-                        <motion.div 
-                          className="px-4 py-2 border-t border-gray-100 text-center"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.3 }}
-                        >
-                          <Button 
-                            variant="link" 
-                            className="text-xs text-blue-600 hover:text-blue-800 transition-colors"
-                            onClick={() => {
-                              setLocation("/activities");
-                            }}
-                          >
-                            View all notifications
-                          </Button>
-                        </motion.div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  {/* Using our new NotificationsDropdown component */}
+                  <NotificationsDropdown 
+                    activities={activitiesData}
+                    isLoading={isLoadingActivities}
+                    isOpen={isNotificationsOpen}
+                    onClose={() => setIsNotificationsOpen(false)}
+                  />
                 </div>
                 
                 {/* Messages Button */}
-                <button 
+                <motion.button 
                   className="text-gray-500 hover:text-gray-700 focus:outline-none relative"
                   onClick={() => setLocation('/messages')}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
                 >
                   <MessageSquare className="h-5 w-5" />
                   {unreadMessages > 0 && (
-                    <span className="absolute top-0 right-0 -mt-1 -mr-1 px-1.5 py-0.5 text-xs font-medium bg-red-500 text-white rounded-full">
+                    <motion.span 
+                      className="absolute top-0 right-0 -mt-1 -mr-1 px-1.5 py-0.5 text-xs font-medium bg-red-500 text-white rounded-full"
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: "spring", stiffness: 500, damping: 15 }}
+                    >
                       {unreadMessages}
-                    </span>
+                    </motion.span>
                   )}
-                </button>
+                </motion.button>
               </div>
             </div>
           </header>
