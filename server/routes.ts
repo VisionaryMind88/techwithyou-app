@@ -188,6 +188,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
     
+    // Endpoint to update payment status
+    app.patch("/api/payments/:id/status", authMiddleware, async (req, res) => {
+      try {
+        const paymentId = parseInt(req.params.id);
+        const { status } = req.body;
+        
+        // Validate status
+        if (!["pending", "completed", "failed", "canceled"].includes(status)) {
+          return res.status(400).json({ message: "Invalid status value" });
+        }
+        
+        // Check permissions
+        if (req.user?.role !== "admin") {
+          return res.status(403).json({ message: "Forbidden: Admin access required" });
+        }
+        
+        const updatedPayment = await storage.updatePaymentStatus(paymentId, status);
+        
+        if (!updatedPayment) {
+          return res.status(404).json({ message: "Payment not found" });
+        }
+        
+        res.json({ payment: updatedPayment });
+      } catch (error: any) {
+        console.error("Error updating payment status:", error);
+        res.status(500).json({ 
+          message: "Error updating payment status", 
+          error: error.message 
+        });
+      }
+    });
+    
     // Endpoint to get payment status
     app.get("/api/payments/:id", authMiddleware, async (req, res) => {
       try {
