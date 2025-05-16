@@ -6,6 +6,8 @@ import {
   activities,
   payments,
   trackingItems,
+  helpQuestions,
+  helpFeedback,
   type User, 
   type InsertUser,
   type Project,
@@ -19,7 +21,11 @@ import {
   type Payment,
   type InsertPayment,
   type TrackingItem,
-  type InsertTrackingItem
+  type InsertTrackingItem,
+  type HelpQuestion,
+  type InsertHelpQuestion,
+  type HelpFeedback,
+  type InsertHelpFeedback
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, isNull, isNotNull } from "drizzle-orm";

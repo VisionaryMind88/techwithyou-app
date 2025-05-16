@@ -209,53 +209,50 @@ export function registerHelpRoutes(app: Express) {
       const userLang = req.user.language || "nl"; // Default to Dutch
       const lang = userLang === "en" ? "en" : "nl";
       
-      // Check if we have a pre-defined answer for this question
-      // This is a simple implementation. In a real-world scenario,
-      // we would use an actual AI service like Perplexity, OpenAI, etc.
-      
-      const lowerQuestion = question.toLowerCase();
       let answer = "";
       
-      // Simple pattern matching for common questions
-      if (lowerQuestion.includes("project") && 
-          (lowerQuestion.includes("create") || lowerQuestion.includes("new") || 
-           lowerQuestion.includes("maken") || lowerQuestion.includes("nieuw"))) {
-        answer = faqData[lang].projectCreate.answer;
-      } 
-      else if (lowerQuestion.includes("file") || lowerQuestion.includes("upload") || 
-               lowerQuestion.includes("bestand") || lowerQuestion.includes("uploaden")) {
-        answer = faqData[lang].fileUpload.answer;
-      }
-      else if ((lowerQuestion.includes("message") || lowerQuestion.includes("bericht")) && 
-               (lowerQuestion.includes("admin") || lowerQuestion.includes("beheerder"))) {
-        answer = faqData[lang].messageAdmin.answer;
-      }
-      else if (lowerQuestion.includes("password") || lowerQuestion.includes("wachtwoord")) {
-        answer = faqData[lang].passwordChange.answer;
-      }
-      else if (lowerQuestion.includes("track") || lowerQuestion.includes("volgen")) {
-        answer = faqData[lang].trackingUse.answer;
-      }
-      else {
-        // If no matching question found, provide a default response
-        answer = lang === "en"
-          ? "I'm sorry, I don't have a specific answer to that question. Please try asking another question or contact support for more help."
-          : "Het spijt me, ik heb geen specifiek antwoord op die vraag. Probeer een andere vraag te stellen of neem contact op met ondersteuning voor meer hulp.";
-      }
-      
-      // In a real implementation, you would connect to an AI service here
-      // For example, if Perplexity integration is available:
-      /*
+      // Try to use Perplexity API if available
       if (process.env.PERPLEXITY_API_KEY) {
         try {
           const aiResponse = await callPerplexityApi(question, contextId, lang);
-          return res.status(200).json({ answer: aiResponse });
+          answer = aiResponse;
         } catch (aiError) {
           console.error("Error calling AI service:", aiError);
           // Fallback to pre-defined answers if AI fails
         }
       }
-      */
+      
+      // If no answer from AI or API key not provided, use pre-defined answers
+      if (!answer) {
+        const lowerQuestion = question.toLowerCase();
+        
+        // Simple pattern matching for common questions
+        if (lowerQuestion.includes("project") && 
+            (lowerQuestion.includes("create") || lowerQuestion.includes("new") || 
+             lowerQuestion.includes("maken") || lowerQuestion.includes("nieuw"))) {
+          answer = faqData[lang].projectCreate.answer;
+        } 
+        else if (lowerQuestion.includes("file") || lowerQuestion.includes("upload") || 
+                 lowerQuestion.includes("bestand") || lowerQuestion.includes("uploaden")) {
+          answer = faqData[lang].fileUpload.answer;
+        }
+        else if ((lowerQuestion.includes("message") || lowerQuestion.includes("bericht")) && 
+                 (lowerQuestion.includes("admin") || lowerQuestion.includes("beheerder"))) {
+          answer = faqData[lang].messageAdmin.answer;
+        }
+        else if (lowerQuestion.includes("password") || lowerQuestion.includes("wachtwoord")) {
+          answer = faqData[lang].passwordChange.answer;
+        }
+        else if (lowerQuestion.includes("track") || lowerQuestion.includes("volgen")) {
+          answer = faqData[lang].trackingUse.answer;
+        }
+        else {
+          // If no matching question found, provide a default response
+          answer = lang === "en"
+            ? "I'm sorry, I don't have a specific answer to that question. Please try asking another question or contact support for more help."
+            : "Het spijt me, ik heb geen specifiek antwoord op die vraag. Probeer een andere vraag te stellen of neem contact op met ondersteuning voor meer hulp.";
+        }
+      }
       
       // Log the question for future improvement of the help system
       await storage.logHelpQuestion({
@@ -303,11 +300,89 @@ export function registerHelpRoutes(app: Express) {
   });
 }
 
-// Helper function to call Perplexity API (to be implemented when API key is available)
+// Helper function to call Perplexity API
 async function callPerplexityApi(question: string, contextId: string, language: string): Promise<string> {
-  // This would be implemented when the Perplexity API key is available
-  // For now, return a placeholder
-  return language === "en"
-    ? "This is a placeholder response from the AI. When the Perplexity API is configured, this will provide intelligent answers to your questions."
-    : "Dit is een tijdelijke reactie van de AI. Wanneer de Perplexity API is geconfigureerd, zal dit intelligente antwoorden geven op je vragen.";
+  try {
+    if (!process.env.PERPLEXITY_API_KEY) {
+      throw new Error("Perplexity API key is not configured");
+    }
+    
+    // Format the prompt with context and in the user's language
+    const systemPrompt = language === "en" 
+      ? "You are a helpful assistant for the Tech With You application. Provide clear, concise answers focused on using the application."
+      : "Je bent een behulpzame assistent voor de Tech With You applicatie. Geef duidelijke, beknopte antwoorden gericht op het gebruik van de applicatie.";
+    
+    const contextPrompt = getContextPrompt(contextId, language);
+    
+    const requestBody = {
+      model: "llama-3.1-sonar-small-128k-online",
+      messages: [
+        {
+          role: "system",
+          content: `${systemPrompt} ${contextPrompt}`
+        },
+        {
+          role: "user",
+          content: question
+        }
+      ],
+      temperature: 0.2,
+      max_tokens: 500,
+      top_p: 0.9,
+      stream: false
+    };
+    
+    const response = await fetch("https://api.perplexity.ai/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.PERPLEXITY_API_KEY}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Perplexity API error: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    return data.choices[0].message.content;
+  } catch (error) {
+    console.error("Error calling Perplexity API:", error);
+    
+    // Return a fallback response if API call fails
+    return language === "en"
+      ? "I'm sorry, I couldn't process your request at the moment. Please try again later or check the help documentation."
+      : "Het spijt me, ik kon je verzoek op dit moment niet verwerken. Probeer het later opnieuw of raadpleeg de hulpdocumentatie.";
+  }
+}
+
+// Helper function to get context-specific prompt
+function getContextPrompt(contextId: string, language: string): string {
+  const contextMap: Record<string, Record<string, string>> = {
+    en: {
+      dashboard: "The dashboard shows an overview of projects, activities, and messages.",
+      projects: "The projects page lists all projects with their status and details.",
+      messages: "The messaging system allows communication between users and admins.",
+      files: "The files section manages uploads, versions, and sharing of documents.",
+      tracking: "The tracking feature provides real-time monitoring of project progress.",
+      settings: "The settings page manages account preferences and profile information."
+    },
+    nl: {
+      dashboard: "Het dashboard toont een overzicht van projecten, activiteiten en berichten.",
+      projects: "De projectenpagina toont alle projecten met hun status en details.",
+      messages: "Het berichtensysteem maakt communicatie tussen gebruikers en beheerders mogelijk.",
+      files: "De bestandensectie beheert uploads, versies en het delen van documenten.",
+      tracking: "De trackingfunctie biedt realtime monitoring van projectvoortgang.",
+      settings: "De instellingenpagina beheert accountvoorkeuren en profielinformatie."
+    }
+  };
+  
+  const lang = language === "en" ? "en" : "nl";
+  const contextInfo = contextMap[lang][contextId] || "";
+  
+  return contextInfo 
+    ? `The user is currently viewing the ${contextId} section. ${contextInfo}`
+    : "";
 }

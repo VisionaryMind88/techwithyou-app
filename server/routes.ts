@@ -628,9 +628,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/files', authMiddleware);
   app.use('/api/activities', authMiddleware);
   
+  // Apply help middleware
+  app.use('/api/help', authMiddleware);
+  
   // Register other route controllers
   registerProjectRoutes(app);
   registerMessageRoutes(app);
+  registerTrackingRoutes(app);
+  registerHelpRoutes(app);
 
   // Health check route (no auth needed)
   app.get('/api/health', (req, res) => {
