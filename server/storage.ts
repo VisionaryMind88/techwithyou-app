@@ -364,33 +364,116 @@ export class DatabaseStorage implements IStorage {
 
   async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
     try {
-      console.log('Storage: updateUser called with id:', id, 'and updates:', updates);
-      
-      // Create a safe update object that doesn't include any undefined values
-      const safeUpdates: Record<string, any> = {};
-      Object.entries(updates).forEach(([key, value]) => {
-        if (value !== undefined) {
-          safeUpdates[key] = value;
-        }
+      console.log('Storage: updateUser called with id:', id, 'and updates:', {
+        ...updates,
+        profilePicture: updates.profilePicture ? '[PROFILE_PICTURE_DATA]' : null
       });
       
-      console.log('Storage: filtered updates:', safeUpdates);
+      // Use a raw SQL query to ensure maximum compatibility
+      const { pool } = await import('./db');
       
-      // Only proceed if there are actual updates to make
-      if (Object.keys(safeUpdates).length === 0) {
-        console.log('Storage: No valid updates provided, fetching current user');
-        const currentUser = await this.getUser(id);
-        return currentUser;
+      // Create the SET clause parts for the SQL query
+      const updateFields: string[] = [];
+      const updateValues: any[] = [];
+      let paramIndex = 1;
+      
+      // Only include fields that are actually provided (not undefined)
+      if (updates.firstName !== undefined) {
+        updateFields.push(`first_name = $${paramIndex++}`);
+        updateValues.push(updates.firstName);
       }
       
-      const [updatedUser] = await db
-        .update(users)
-        .set(safeUpdates)
-        .where(eq(users.id, id))
-        .returning();
+      if (updates.lastName !== undefined) {
+        updateFields.push(`last_name = $${paramIndex++}`);
+        updateValues.push(updates.lastName);
+      }
       
-      console.log('Storage: User updated successfully:', updatedUser?.email);
-      return updatedUser || undefined;
+      if (updates.email !== undefined) {
+        updateFields.push(`email = $${paramIndex++}`);
+        updateValues.push(updates.email);
+      }
+      
+      if (updates.profilePicture !== undefined) {
+        updateFields.push(`profile_picture = $${paramIndex++}`);
+        updateValues.push(updates.profilePicture);
+      }
+      
+      if (updates.password !== undefined) {
+        updateFields.push(`password = $${paramIndex++}`);
+        updateValues.push(updates.password);
+      }
+      
+      if (updates.role !== undefined) {
+        updateFields.push(`role = $${paramIndex++}`);
+        updateValues.push(updates.role);
+      }
+      
+      if (updates.provider !== undefined) {
+        updateFields.push(`provider = $${paramIndex++}`);
+        updateValues.push(updates.provider);
+      }
+      
+      if (updates.providerId !== undefined) {
+        updateFields.push(`provider_id = $${paramIndex++}`);
+        updateValues.push(updates.providerId);
+      }
+      
+      if (updates.rememberToken !== undefined) {
+        updateFields.push(`remember_token = $${paramIndex++}`);
+        updateValues.push(updates.rememberToken);
+      }
+      
+      if (updates.stripeCustomerId !== undefined) {
+        updateFields.push(`stripe_customer_id = $${paramIndex++}`);
+        updateValues.push(updates.stripeCustomerId);
+      }
+      
+      // If no fields to update, just return the current user
+      if (updateFields.length === 0) {
+        console.log('Storage: No fields to update, returning current user');
+        return this.getUser(id);
+      }
+      
+      // Create and execute the SQL query
+      updateValues.push(id); // Add the ID as the last parameter
+      const setClause = updateFields.join(', ');
+      const query = `
+        UPDATE users 
+        SET ${setClause}, updated_at = NOW()
+        WHERE id = $${paramIndex}
+        RETURNING id, email, first_name, last_name, role, provider, provider_id, 
+                  remember_token, stripe_customer_id, profile_picture, created_at, updated_at
+      `;
+      
+      console.log('Storage: Executing SQL query:', query);
+      console.log('Storage: With values:', updateValues);
+      
+      const result = await pool.query(query, updateValues);
+      
+      if (result.rows.length === 0) {
+        console.log('Storage: No user found with ID:', id);
+        return undefined;
+      }
+      
+      // Convert the row to camelCase for our application
+      const updatedUser = {
+        id: result.rows[0].id,
+        email: result.rows[0].email,
+        firstName: result.rows[0].first_name,
+        lastName: result.rows[0].last_name,
+        role: result.rows[0].role,
+        provider: result.rows[0].provider,
+        providerId: result.rows[0].provider_id,
+        rememberToken: result.rows[0].remember_token,
+        stripeCustomerId: result.rows[0].stripe_customer_id,
+        profilePicture: result.rows[0].profile_picture,
+        createdAt: result.rows[0].created_at,
+        updatedAt: result.rows[0].updated_at,
+        password: null // Don't return the password
+      };
+      
+      console.log('Storage: User updated successfully:', updatedUser.email);
+      return updatedUser;
     } catch (error) {
       console.error('Storage: Error in updateUser:', error);
       throw error;
