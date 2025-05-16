@@ -373,6 +373,17 @@ export function ChatModule({
           <div ref={messagesEndRef} tabIndex={-1} aria-hidden="true" />
         </div>
         
+        {/* Status Message for Screen Readers */}
+        {statusMessage && (
+          <div 
+            className="px-4 py-2 text-center text-sm bg-gray-100" 
+            aria-live="polite"
+            role="status"
+          >
+            {statusMessage}
+          </div>
+        )}
+        
         {/* Message Input */}
         <div 
           className="px-4 py-3 bg-gray-50 border-t border-gray-200"
