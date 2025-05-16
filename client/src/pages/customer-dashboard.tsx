@@ -26,6 +26,7 @@ export default function CustomerDashboard() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<{id: number, name: string} | null>(null);
   const [showTour, setShowTour] = useState(false);
   const { user } = useAuth();
@@ -97,6 +98,26 @@ export default function CustomerDashboard() {
   const formatStatus = (status: string) => {
     return status.replace(/_/g, ' ').replace(/-/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
   };
+  
+  // Function to mark an activity as read
+  const markActivityAsRead = async (activityId: number) => {
+    try {
+      await apiRequest('PATCH', `/api/activities/${activityId}/read`);
+      // Update the local state
+      queryClient.invalidateQueries({ queryKey: ['/api/activities/user'] });
+      toast({
+        title: "Notification marked as read",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error('Error marking activity as read:', error);
+      toast({
+        title: "Error",
+        description: "Could not mark notification as read",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -135,14 +156,71 @@ export default function CustomerDashboard() {
               
               {/* Right Nav Elements */}
               <div className="flex items-center space-x-4">
+                {/* Messages Notification */}
                 <button className="text-gray-500 hover:text-gray-700 focus:outline-none relative">
-                  <Bell className="h-5 w-5" />
+                  <MessageSquare className="h-5 w-5" />
                   {messages.filter(m => !m.isRead).length > 0 && (
                     <span className="absolute top-0 right-0 -mt-1 -mr-1 px-1.5 py-0.5 text-xs font-medium bg-red-500 text-white rounded-full">
                       {messages.filter(m => !m.isRead).length}
                     </span>
                   )}
                 </button>
+                
+                {/* Activities/Notifications Dropdown */}
+                <div className="relative">
+                  <button 
+                    className="text-gray-500 hover:text-gray-700 focus:outline-none relative"
+                    onClick={() => setIsNotificationsOpen(prev => !prev)}
+                  >
+                    <Bell className="h-5 w-5" />
+                    {activities.filter(a => !a.isRead).length > 0 && (
+                      <span className="absolute top-0 right-0 -mt-1 -mr-1 px-1.5 py-0.5 text-xs font-medium bg-red-500 text-white rounded-full">
+                        {activities.filter(a => !a.isRead).length}
+                      </span>
+                    )}
+                  </button>
+                  
+                  {isNotificationsOpen && (
+                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-50 max-h-96 overflow-auto">
+                      <div className="px-4 py-2 border-b border-gray-100">
+                        <h3 className="text-sm font-semibold text-gray-700">Notifications</h3>
+                      </div>
+                      
+                      {isLoadingActivities ? (
+                        <div className="px-4 py-2">
+                          <Skeleton className="h-4 w-full mb-2" />
+                          <Skeleton className="h-4 w-3/4" />
+                        </div>
+                      ) : activities.length === 0 ? (
+                        <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                          No notifications
+                        </div>
+                      ) : (
+                        <>
+                          {activities.map((activity) => (
+                            <div 
+                              key={activity.id} 
+                              className={`px-4 py-3 hover:bg-gray-50 border-l-4 ${activity.isRead ? 'border-transparent' : 'border-blue-500'}`}
+                              onClick={() => markActivityAsRead(activity.id)}
+                            >
+                              <div className="flex items-start">
+                                <ActivityIcon className="h-5 w-5 mr-3 text-blue-500 mt-0.5" />
+                                <div>
+                                  <p className="text-sm text-gray-800">
+                                    {activity.description}
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    {format(new Date(activity.createdAt), 'MMM d, yyyy · h:mm a')}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </header>

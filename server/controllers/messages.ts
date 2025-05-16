@@ -10,18 +10,14 @@ export function registerMessageRoutes(app: Express) {
   app.get("/api/activities/user", async (req: AuthRequest, res: Response) => {
     try {
       if (!req.user) {
-        return res.status(401).json({ message: "Not authenticated" });
+        return res.status(401).json({ message: "Authentication required" });
       }
 
-      // Get recent activities for the current user from storage
-      const userActivities = await storage.getRecentActivities(10);
+      // Get activities for the current user using the optimized method
+      const userActivities = await storage.getUserActivities(req.user.id, 10);
       
-      // Filter activities to only show those relevant to the current user
-      const filteredActivities = userActivities.filter(activity => 
-        activity.userId === req.user?.id
-      );
-
-      res.json(filteredActivities);
+      // Return the activities to the client
+      res.json(userActivities);
     } catch (error) {
       console.error("Get user activities error:", error);
       res.status(500).json({ message: "Internal server error" });
