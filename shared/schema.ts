@@ -15,6 +15,7 @@ export const users = pgTable("users", {
   providerId: text("provider_id"),
   rememberToken: text("remember_token"),
   stripeCustomerId: text("stripe_customer_id"),
+  profilePicture: text("profile_picture"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

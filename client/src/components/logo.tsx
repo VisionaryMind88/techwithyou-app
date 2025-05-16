@@ -4,12 +4,14 @@ interface LogoProps {
   className?: string;
   size?: "sm" | "md" | "lg";
   variant?: "normal" | "inverted";
+  textColor?: string;
 }
 
 export function Logo({ 
   className = "", 
   size = "md", 
-  variant = "normal" 
+  variant = "normal",
+  textColor
 }: LogoProps) {
   // Size mapping
   const sizeClasses = {
@@ -25,7 +27,7 @@ export function Logo({
   };
   
   return (
-    <div className={`font-bold ${sizeClasses[size]} ${colorClasses[variant]} ${className}`}>
+    <div className={`font-bold ${sizeClasses[size]} ${textColor || colorClasses[variant]} ${className}`}>
       TechWithYou
     </div>
   );
