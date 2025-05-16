@@ -24,7 +24,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Client connections map to track connected users
   const clients = new Map<number, WebSocket>();
+  
+  // Set up a dedicated route for admin payments that comes before all other routes
+  app.get("/api/payments/admin", authMiddleware, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
 
+      if (req.user.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      console.log("Admin payments endpoint called by:", req.user.email);
+      const payments = await storage.getAllPayments();
+      console.log("Returning payments:", payments.length);
+      res.json({ payments });
+    } catch (error: any) {
+      console.error("Error getting payments:", error);
+      res.status(500).json({ 
+        message: "Error getting payments", 
+        error: error.message 
+      });
+    }
+  });
+
+  // Clear old duplicate admin payments route to avoid conflicts
+  app.get("/api/payments/admin", authMiddleware, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      if (req.user.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      console.log("Admin payments endpoint called by:", req.user.email);
+      const payments = await storage.getAllPayments();
+      console.log("Returning payments:", payments.length);
+      res.json({ payments });
+    } catch (error: any) {
+      console.error("Error getting payments:", error);
+      res.status(500).json({ 
+        message: "Error getting payments", 
+        error: error.message 
+      });
+    }
+  });
+
+  // Get pending payments - admin only
+  app.get("/api/payments/admin/pending", authMiddleware, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      if (req.user.role !== "admin") {
+        return res.status(403).json({ message: "Forbidden: Admin access required" });
+      }
+      
+      const payments = await storage.getPendingPayments();
+      res.json({ payments });
+    } catch (error: any) {
+      console.error("Error getting pending payments:", error);
+      res.status(500).json({ 
+        message: "Error getting pending payments", 
+        error: error.message 
+      });
+    }
+  });
+  
   // Payment routes
   if (stripe) {
     // Create a payment intent for one-time payments
