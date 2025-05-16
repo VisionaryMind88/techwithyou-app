@@ -13,8 +13,10 @@ import {
   WifiOff,
   Settings,
   Server,
-  BarChart3
+  BarChart3,
+  MessageSquare
 } from "lucide-react";
+import { TrackingChatDialog } from "@/components/tracking-chat-dialog";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +42,7 @@ export function LiveTracker({ item, onStatusChange }: TrackingItemProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   
   // Check if the user is an admin
   const isAdmin = user?.role === 'admin';
@@ -200,17 +203,28 @@ export function LiveTracker({ item, onStatusChange }: TrackingItemProps) {
             <div>{/* Empty div to keep the spacing consistent */}</div>
           )}
           
-          {item.url && (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handleOpenLink}
-              className="text-xs"
+          <div className="flex gap-2">
+            {item.url && (
+              <Button 
+                variant="default" 
+                size="sm"
+                onClick={handleOpenLink}
+                className="text-xs bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md transition-all duration-300 hover:shadow-lg"
+              >
+                <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                LIVE
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm" 
+              onClick={() => setIsChatOpen(true)}
+              className="text-xs flex items-center"
             >
-              <ExternalLink className="h-3.5 w-3.5 mr-1" />
-              {t("action.openLink") || "Open Link"}
+              <MessageSquare className="h-3.5 w-3.5 mr-1" />
+              {t("tracking.chat") || "Chat"}
             </Button>
-          )}
+          </div>
         </CardFooter>
       </Card>
     </motion.div>

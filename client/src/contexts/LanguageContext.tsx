@@ -406,6 +406,34 @@ const translations: Translations = {
     nl: 'Nieuw tracking item',
     en: 'New tracking item',
   },
+  'tracking.deactivate': {
+    nl: 'Deactiveren',
+    en: 'Deactivate',
+  },
+  'tracking.activate': {
+    nl: 'Activeren',
+    en: 'Activate',
+  },
+  'tracking.description': {
+    nl: 'Beheer en monitor real-time tracking items',
+    en: 'Monitor and manage real-time tracking items',
+  },
+  'tracking.chat': {
+    nl: 'Chat',
+    en: 'Chat',
+  },
+  'tracking.live': {
+    nl: 'LIVE',
+    en: 'LIVE',
+  },
+  'action.openLink': {
+    nl: 'Open Link',
+    en: 'Open Link',
+  },
+  'common.backToDashboard': {
+    nl: 'Ga terug naar Dashboard',
+    en: 'Go back to Dashboard',
+  },
 
   // Language
   'language.switcher': {
