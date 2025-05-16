@@ -22,6 +22,8 @@ import { ChatModule } from "@/components/chat-module";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { BottomNavigation } from "@/components/mobile/bottom-navigation";
+import { MobileHeader } from "@/components/mobile/mobile-header";
 
 export default function CustomerDashboard() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
