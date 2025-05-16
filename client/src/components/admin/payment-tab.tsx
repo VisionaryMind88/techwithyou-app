@@ -1,22 +1,36 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { 
-  Card, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription, 
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Card,
   CardContent,
-  CardFooter
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -26,209 +40,229 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { 
-  Form, 
-  FormControl, 
-  FormDescription, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { 
-  DollarSign, 
-  Calendar, 
-  Clock, 
-  CreditCard, 
-  CheckCircle, 
-  XCircle, 
-  AlertCircle,
-  Plus
-} from "lucide-react";
-import { formatDistanceToNow, format } from "date-fns";
+import { ChevronDown, MoreVertical, PlusCircle } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
-// Define the payment status badge colors
-const statusColors = {
-  pending: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",
-  completed: "bg-green-100 text-green-800 hover:bg-green-100",
-  failed: "bg-red-100 text-red-800 hover:bg-red-100",
-  canceled: "bg-gray-100 text-gray-800 hover:bg-gray-100"
+// Status badges
+const PaymentStatusBadge = ({ status }: { status: string }) => {
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "failed":
+        return "bg-red-100 text-red-800";
+      case "canceled":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  return (
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+        status
+      )}`}
+    >
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </span>
+  );
 };
 
-// Form schema for creating payment requests
-const paymentRequestSchema = z.object({
-  projectId: z.string().min(1, { message: "Project is required" }),
-  userId: z.string().min(1, { message: "Customer is required" }),
-  amount: z.string().min(1, { message: "Amount is required" }),
-  description: z.string().min(1, { message: "Description is required" }),
-  messageContent: z.string().min(1, { message: "Message content is required" })
+// Payment creation form schema
+const paymentFormSchema = z.object({
+  amount: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
+    message: "Amount must be a positive number",
+  }),
+  projectId: z.string(),
+  userId: z.string(),
+  description: z.string().min(5, "Description is required"),
 });
 
-type PaymentRequestFormValues = z.infer<typeof paymentRequestSchema>;
+type PaymentFormValues = z.infer<typeof paymentFormSchema>;
 
-// Payment status component
-interface PaymentStatusProps {
-  status: string;
-}
-
-function PaymentStatus({ status }: PaymentStatusProps) {
-  let icon = null;
-  let statusText = status.charAt(0).toUpperCase() + status.slice(1);
-  
-  switch (status) {
-    case "completed":
-      icon = <CheckCircle className="h-4 w-4 mr-1" />;
-      break;
-    case "failed":
-      icon = <XCircle className="h-4 w-4 mr-1" />;
-      break;
-    case "pending":
-      icon = <Clock className="h-4 w-4 mr-1" />;
-      break;
-    default:
-      icon = <AlertCircle className="h-4 w-4 mr-1" />;
-  }
-  
-  return (
-    <Badge 
-      variant="outline" 
-      className={`flex items-center ${statusColors[status as keyof typeof statusColors] || "bg-gray-100"}`}
-    >
-      {icon}
-      <span>{statusText}</span>
-    </Badge>
-  );
-}
-
-// Main payment tab component
 export function PaymentTab() {
-  const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
+  const [isNewPaymentOpen, setIsNewPaymentOpen] = useState(false);
   const { toast } = useToast();
-  
-  // Fetch payments
-  const { data: payments, isLoading: isLoadingPayments } = useQuery({
-    queryKey: ['/api/admin/payments'],
-    enabled: true,
+  const queryClient = useQueryClient();
+
+  // Fetch all projects for the dropdown
+  const { data: projectsData } = useQuery({
+    queryKey: ["/api/projects/admin"],
   });
-  
-  // Fetch projects for the dropdown
-  const { data: projects, isLoading: isLoadingProjects } = useQuery({
-    queryKey: ['/api/projects/admin'],
-    enabled: true,
-  });
-  
+
   // Fetch users for the dropdown
-  const { data: users, isLoading: isLoadingUsers } = useQuery({
-    queryKey: ['/api/users/admin'],
-    enabled: true,
+  const { data: usersData } = useQuery({
+    queryKey: ["/api/users/admin"],
   });
-  
-  // Create payment request mutation
-  const createPaymentRequest = useMutation({
-    mutationFn: async (data: PaymentRequestFormValues) => {
-      return apiRequest('POST', '/api/payment-requests', {
+
+  // Fetch all payments
+  const { data: paymentsData, isLoading: isLoadingPayments } = useQuery({
+    queryKey: ["/api/payments/admin"],
+  });
+
+  const form = useForm<PaymentFormValues>({
+    resolver: zodResolver(paymentFormSchema),
+    defaultValues: {
+      amount: "",
+      projectId: "",
+      userId: "",
+      description: "",
+    },
+  });
+
+  // Create payment mutation
+  const createPaymentMutation = useMutation({
+    mutationFn: async (data: PaymentFormValues) => {
+      return await apiRequest("POST", "/api/payments", {
+        amount: parseFloat(data.amount),
         projectId: parseInt(data.projectId),
         userId: parseInt(data.userId),
-        amount: parseFloat(data.amount),
         description: data.description,
-        messageContent: data.messageContent
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/payments'] });
       toast({
-        title: "Payment Request Created",
+        title: "Payment request created",
         description: "The payment request has been sent to the customer.",
-        variant: "default",
       });
-      setIsNewRequestOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/payments/admin"] });
+      setIsNewPaymentOpen(false);
+      form.reset();
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to Create Payment Request",
-        description: error.message || "An error occurred. Please try again.",
+        title: "Error creating payment request",
+        description: error.message || "There was an error creating the payment request.",
         variant: "destructive",
       });
-    }
+    },
   });
-  
-  // Form for creating new payment requests
-  const form = useForm<PaymentRequestFormValues>({
-    resolver: zodResolver(paymentRequestSchema),
-    defaultValues: {
-      projectId: "",
-      userId: "",
-      amount: "",
-      description: "",
-      messageContent: "Please review and approve this payment request."
-    }
+
+  // Update payment status mutation
+  const updatePaymentStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      return await apiRequest("PATCH", `/api/payments/${id}/status`, { status });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Payment status updated",
+        description: "The payment status has been updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/payments/admin"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error updating payment status",
+        description: error.message || "There was an error updating the payment status.",
+        variant: "destructive",
+      });
+    },
   });
-  
-  // Handle form submission
-  function onSubmit(data: PaymentRequestFormValues) {
-    createPaymentRequest.mutate(data);
-  }
-  
-  // Handle project selection to auto-select the project owner
-  function handleProjectChange(projectId: string) {
-    const project = projects?.projects.find((p: any) => p.id.toString() === projectId);
-    if (project) {
-      form.setValue('userId', project.userId.toString());
-    }
-  }
-  
+
+  const onSubmit = (values: PaymentFormValues) => {
+    createPaymentMutation.mutate(values);
+  };
+
+  // Payment stats calculation
+  const getPaymentStats = () => {
+    if (!paymentsData?.payments) return { total: 0, pending: 0, completed: 0, failed: 0 };
+
+    const payments = paymentsData.payments;
+    
+    return {
+      total: payments.length,
+      pending: payments.filter((p: any) => p.status === "pending").length,
+      completed: payments.filter((p: any) => p.status === "completed").length,
+      failed: payments.filter((p: any) => p.status === "failed").length,
+      canceled: payments.filter((p: any) => p.status === "canceled").length,
+      totalAmount: payments
+        .filter((p: any) => p.status === "completed")
+        .reduce((sum: number, p: any) => sum + parseFloat(p.amount), 0)
+        .toFixed(2),
+    };
+  };
+
+  const stats = getPaymentStats();
+
+  // Find project and user names
+  const getProjectName = (projectId: number) => {
+    if (!projectsData?.projects) return "Unknown Project";
+    const project = projectsData.projects.find((p: any) => p.id === projectId);
+    return project ? project.name : "Unknown Project";
+  };
+
+  const getUserName = (userId: number) => {
+    if (!usersData?.users) return "Unknown User";
+    const user = usersData.users.find((u: any) => u.id === userId);
+    return user ? `${user.firstName} ${user.lastName}` : "Unknown User";
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-semibold">Payments</h2>
-          <p className="text-muted-foreground">Manage payment requests and track payment status</p>
-        </div>
-        
-        <Dialog open={isNewRequestOpen} onOpenChange={setIsNewRequestOpen}>
+        <h2 className="text-2xl font-bold">Payment Management</h2>
+        <Dialog open={isNewPaymentOpen} onOpenChange={setIsNewPaymentOpen}>
           <DialogTrigger asChild>
-            <Button className="flex items-center">
-              <Plus className="h-4 w-4 mr-2" />
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
               New Payment Request
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Create Payment Request</DialogTitle>
+              <DialogTitle>Create New Payment Request</DialogTitle>
               <DialogDescription>
-                This will send a payment request to the customer and create a message with payment information.
+                Create a payment request that will be sent to the customer.
               </DialogDescription>
             </DialogHeader>
-            
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Amount ($)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="0.00" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="projectId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Project</FormLabel>
-                      <Select 
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          handleProjectChange(value);
-                        }} 
+                      <Select
+                        onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
@@ -237,73 +271,46 @@ export function PaymentTab() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {isLoadingProjects ? (
-                            <SelectItem value="loading" disabled>Loading projects...</SelectItem>
-                          ) : (
-                            projects?.projects.map((project: any) => (
-                              <SelectItem key={project.id} value={project.id.toString()}>
-                                {project.name}
-                              </SelectItem>
-                            ))
-                          )}
+                          {projectsData?.projects?.map((project: any) => (
+                            <SelectItem key={project.id} value={project.id.toString()}>
+                              {project.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
                 <FormField
                   control={form.control}
                   name="userId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Customer</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a customer" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {isLoadingUsers ? (
-                            <SelectItem value="loading" disabled>Loading users...</SelectItem>
-                          ) : (
-                            users?.users
-                              .filter((user: any) => user.role === "customer")
-                              .map((user: any) => (
-                                <SelectItem key={user.id} value={user.id.toString()}>
-                                  {user.firstName} {user.lastName} ({user.email})
-                                </SelectItem>
-                              ))
-                          )}
+                          {usersData?.users
+                            ?.filter((user: any) => user.role === "customer")
+                            .map((user: any) => (
+                              <SelectItem key={user.id} value={user.id.toString()}>
+                                {user.firstName} {user.lastName}
+                              </SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
-                <FormField
-                  control={form.control}
-                  name="amount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Amount ($)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          step="0.01" 
-                          min="0.01" 
-                          placeholder="0.00" 
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
                 <FormField
                   control={form.control}
                   name="description"
@@ -311,46 +318,21 @@ export function PaymentTab() {
                     <FormItem>
                       <FormLabel>Description</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="e.g., Website development - Phase 1" 
-                          {...field} 
+                        <Textarea
+                          placeholder="Describe what this payment is for..."
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
-                <FormField
-                  control={form.control}
-                  name="messageContent"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Message to Customer</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Enter a message to include with the payment request" 
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
                 <DialogFooter>
                   <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsNewRequestOpen(false)}
+                    type="submit"
+                    disabled={createPaymentMutation.isPending}
                   >
-                    Cancel
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    disabled={createPaymentRequest.isPending}
-                  >
-                    {createPaymentRequest.isPending ? "Creating..." : "Create Payment Request"}
+                    {createPaymentMutation.isPending ? "Creating..." : "Create Request"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -358,175 +340,220 @@ export function PaymentTab() {
           </DialogContent>
         </Dialog>
       </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Payment Requests</CardTitle>
-          <CardDescription>
-            Showing all payment requests across your projects
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Payments
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.total}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Pending Payments
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.pending}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Completed Payments
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.completed}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Revenue
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">${stats.totalAmount || "0.00"}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs defaultValue="all">
+        <TabsList>
+          <TabsTrigger value="all">All Payments</TabsTrigger>
+          <TabsTrigger value="pending">Pending</TabsTrigger>
+          <TabsTrigger value="completed">Completed</TabsTrigger>
+          <TabsTrigger value="failed">Failed</TabsTrigger>
+        </TabsList>
+        <TabsContent value="all" className="mt-4">
+          <PaymentTable
+            payments={paymentsData?.payments || []}
+            getProjectName={getProjectName}
+            getUserName={getUserName}
+            onUpdateStatus={(id, status) =>
+              updatePaymentStatusMutation.mutate({ id, status })
+            }
+            isLoading={isLoadingPayments}
+          />
+        </TabsContent>
+        <TabsContent value="pending" className="mt-4">
+          <PaymentTable
+            payments={(paymentsData?.payments || []).filter((p: any) => p.status === "pending")}
+            getProjectName={getProjectName}
+            getUserName={getUserName}
+            onUpdateStatus={(id, status) =>
+              updatePaymentStatusMutation.mutate({ id, status })
+            }
+            isLoading={isLoadingPayments}
+          />
+        </TabsContent>
+        <TabsContent value="completed" className="mt-4">
+          <PaymentTable
+            payments={(paymentsData?.payments || []).filter((p: any) => p.status === "completed")}
+            getProjectName={getProjectName}
+            getUserName={getUserName}
+            onUpdateStatus={(id, status) =>
+              updatePaymentStatusMutation.mutate({ id, status })
+            }
+            isLoading={isLoadingPayments}
+          />
+        </TabsContent>
+        <TabsContent value="failed" className="mt-4">
+          <PaymentTable
+            payments={(paymentsData?.payments || []).filter((p: any) => p.status === "failed")}
+            getProjectName={getProjectName}
+            getUserName={getUserName}
+            onUpdateStatus={(id, status) =>
+              updatePaymentStatusMutation.mutate({ id, status })
+            }
+            isLoading={isLoadingPayments}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function PaymentTable({
+  payments,
+  getProjectName,
+  getUserName,
+  onUpdateStatus,
+  isLoading,
+}: {
+  payments: any[];
+  getProjectName: (id: number) => string;
+  getUserName: (id: number) => string;
+  onUpdateStatus: (id: number, status: string) => void;
+  isLoading: boolean;
+}) {
+  return (
+    <Card>
+      <CardContent className="p-0">
+        <Table>
+          <TableCaption>
+            {isLoading
+              ? "Loading payments..."
+              : payments.length === 0
+              ? "No payments found"
+              : "List of all payment requests"}
+          </TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>ID</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Project</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
               <TableRow>
-                <TableHead>Amount</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Project</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableCell colSpan={7} className="text-center">
+                  Loading...
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoadingPayments ? (
-                Array.from({ length: 5 }).map((_, index) => (
-                  <TableRow key={index}>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-40" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-28" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-28" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-9 w-20" /></TableCell>
-                  </TableRow>
-                ))
-              ) : payments?.payments?.length > 0 ? (
-                payments.payments.map((payment: any) => {
-                  // Find the associated project and user
-                  const project = projects?.projects.find(
-                    (p: any) => p.id === payment.projectId
-                  );
-                  const user = users?.users.find(
-                    (u: any) => u.id === payment.userId
-                  );
-                  
-                  return (
-                    <TableRow key={payment.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center">
-                          <DollarSign className="h-4 w-4 mr-1 text-green-600" />
-                          ${parseFloat(payment.amount).toFixed(2)}
-                        </div>
-                      </TableCell>
-                      <TableCell>{payment.description}</TableCell>
-                      <TableCell>{project?.name || 'Unknown Project'}</TableCell>
-                      <TableCell>
-                        {user ? `${user.firstName} ${user.lastName}` : 'Unknown User'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="text-xs text-muted-foreground">
-                            {payment.createdAt ? format(new Date(payment.createdAt), 'MMM d, yyyy') : ''}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {payment.createdAt ? formatDistanceToNow(new Date(payment.createdAt), { addSuffix: true }) : ''}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <PaymentStatus status={payment.status} />
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="outline" size="sm">
-                          <CreditCard className="h-4 w-4 mr-1" />
-                          View
+            ) : payments.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center">
+                  No payments found
+                </TableCell>
+              </TableRow>
+            ) : (
+              payments.map((payment: any) => (
+                <TableRow key={payment.id}>
+                  <TableCell className="font-medium">{payment.id}</TableCell>
+                  <TableCell>${parseFloat(payment.amount).toFixed(2)}</TableCell>
+                  <TableCell>{getProjectName(payment.projectId)}</TableCell>
+                  <TableCell>{getUserName(payment.userId)}</TableCell>
+                  <TableCell>
+                    {payment.createdAt
+                      ? format(new Date(payment.createdAt), "MMM d, yyyy")
+                      : "N/A"}
+                  </TableCell>
+                  <TableCell>
+                    <PaymentStatusBadge status={payment.status} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Open menu</span>
+                          <MoreVertical className="h-4 w-4" />
                         </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
-                    No payment requests found
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {payment.status === "pending" && (
+                          <>
+                            <DropdownMenuItem
+                              onClick={() => onUpdateStatus(payment.id, "completed")}
+                            >
+                              Mark as Completed
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => onUpdateStatus(payment.id, "failed")}
+                            >
+                              Mark as Failed
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => onUpdateStatus(payment.id, "canceled")}
+                            >
+                              Cancel Payment
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        {payment.status === "failed" && (
+                          <DropdownMenuItem
+                            onClick={() => onUpdateStatus(payment.id, "pending")}
+                          >
+                            Retry Payment
+                          </DropdownMenuItem>
+                        )}
+                        {payment.status === "canceled" && (
+                          <DropdownMenuItem
+                            onClick={() => onUpdateStatus(payment.id, "pending")}
+                          >
+                            Reactivate Payment
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Payment Statistics</CardTitle>
-          <CardDescription>
-            Overview of payment activity and status
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-blue-50 p-4 rounded-md flex items-center">
-              <div className="rounded-full bg-blue-100 p-3 mr-3">
-                <CreditCard className="h-6 w-6 text-blue-700" />
-              </div>
-              <div>
-                <p className="text-sm text-blue-700">Total Payments</p>
-                <p className="text-xl font-semibold">
-                  {isLoadingPayments ? (
-                    <Skeleton className="h-6 w-12 inline-block" />
-                  ) : (
-                    payments?.payments?.length || 0
-                  )}
-                </p>
-              </div>
-            </div>
-            
-            <div className="bg-green-50 p-4 rounded-md flex items-center">
-              <div className="rounded-full bg-green-100 p-3 mr-3">
-                <CheckCircle className="h-6 w-6 text-green-700" />
-              </div>
-              <div>
-                <p className="text-sm text-green-700">Completed</p>
-                <p className="text-xl font-semibold">
-                  {isLoadingPayments ? (
-                    <Skeleton className="h-6 w-12 inline-block" />
-                  ) : (
-                    payments?.payments?.filter((p: any) => p.status === "completed").length || 0
-                  )}
-                </p>
-              </div>
-            </div>
-            
-            <div className="bg-yellow-50 p-4 rounded-md flex items-center">
-              <div className="rounded-full bg-yellow-100 p-3 mr-3">
-                <Clock className="h-6 w-6 text-yellow-700" />
-              </div>
-              <div>
-                <p className="text-sm text-yellow-700">Pending</p>
-                <p className="text-xl font-semibold">
-                  {isLoadingPayments ? (
-                    <Skeleton className="h-6 w-12 inline-block" />
-                  ) : (
-                    payments?.payments?.filter((p: any) => p.status === "pending").length || 0
-                  )}
-                </p>
-              </div>
-            </div>
-            
-            <div className="bg-gray-50 p-4 rounded-md flex items-center">
-              <div className="rounded-full bg-gray-100 p-3 mr-3">
-                <DollarSign className="h-6 w-6 text-gray-700" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-700">Total Revenue</p>
-                <p className="text-xl font-semibold">
-                  {isLoadingPayments ? (
-                    <Skeleton className="h-6 w-20 inline-block" />
-                  ) : (
-                    `$${payments?.payments
-                      ?.filter((p: any) => p.status === "completed")
-                      .reduce((sum: number, p: any) => sum + parseFloat(p.amount), 0)
-                      .toFixed(2) || "0.00"}`
-                  )}
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }

@@ -77,6 +77,73 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  
+  // Payment-related methods
+  async getPayment(id: number): Promise<Payment | undefined> {
+    const [payment] = await db.select().from(payments).where(eq(payments.id, id));
+    return payment;
+  }
+  
+  async getPaymentsByUser(userId: number): Promise<Payment[]> {
+    return await db.select().from(payments).where(eq(payments.userId, userId));
+  }
+  
+  async getPaymentsByProject(projectId: number): Promise<Payment[]> {
+    return await db.select().from(payments).where(eq(payments.projectId, projectId));
+  }
+  
+  async getAllPayments(limit: number = 100): Promise<Payment[]> {
+    return await db.select().from(payments).limit(limit);
+  }
+  
+  async getPendingPayments(): Promise<Payment[]> {
+    return await db.select().from(payments).where(eq(payments.status, "pending"));
+  }
+  
+  async createPayment(payment: InsertPayment): Promise<Payment> {
+    const [newPayment] = await db.insert(payments).values(payment).returning();
+    return newPayment;
+  }
+  
+  async updatePayment(id: number, updates: Partial<Payment>): Promise<Payment | undefined> {
+    const [updatedPayment] = await db
+      .update(payments)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(payments.id, id))
+      .returning();
+    return updatedPayment;
+  }
+  
+  async updatePaymentStatus(id: number, status: string, stripePaymentIntentId?: string): Promise<Payment | undefined> {
+    const updates: Partial<Payment> = {
+      status,
+      updatedAt: new Date(),
+    };
+    
+    if (stripePaymentIntentId) {
+      updates.stripePaymentIntentId = stripePaymentIntentId;
+    }
+    
+    const [updatedPayment] = await db
+      .update(payments)
+      .set(updates)
+      .where(eq(payments.id, id))
+      .returning();
+    return updatedPayment;
+  }
+  
+  async updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ stripeCustomerId })
+      .where(eq(users.id, userId))
+      .returning();
+    return updatedUser;
+  }
+  
   // Users
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));

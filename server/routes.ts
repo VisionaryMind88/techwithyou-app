@@ -149,7 +149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
     
     // Endpoint for admin to get all payments
-    app.get("/api/admin/payments", authMiddleware, async (req, res) => {
+    app.get("/api/payments/admin", authMiddleware, async (req, res) => {
       try {
         if (req.user?.role !== "admin") {
           return res.status(403).json({ message: "Forbidden: Admin access required" });
