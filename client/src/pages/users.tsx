@@ -129,19 +129,20 @@ export default function UsersPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar for desktop */}
-      <Sidebar 
-        isMobile={false} 
-        onClose={() => {}} 
-        userRole="admin" 
-      />
-      
-      {/* Mobile Sidebar */}
-      <Sidebar 
-        isMobile={true} 
-        onClose={() => setIsMobileSidebarOpen(false)} 
-        userRole="admin"
-      />
+      {/* Sidebar - Desktop view (always visible) and Mobile view (conditionally visible) */}
+      {isMobileSidebarOpen ? (
+        <Sidebar 
+          isMobile={true} 
+          onClose={() => setIsMobileSidebarOpen(false)} 
+          userRole="admin"
+        />
+      ) : (
+        <Sidebar 
+          isMobile={false} 
+          onClose={() => {}} 
+          userRole="admin" 
+        />
+      )}
       
       <div className="flex-1">
         {/* Mobile Header */}
