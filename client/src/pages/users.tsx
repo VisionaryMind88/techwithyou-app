@@ -46,16 +46,25 @@ export default function UsersPage() {
     error
   } = useQuery<User[]>({
     queryKey: ["/api/users/admin"],
-    enabled: !!user && user.role === "admin"
+    enabled: !!user && user.role === "admin",
+    onError: (err) => {
+      console.error("Error fetching users:", err);
+    },
+    onSuccess: (data) => {
+      console.log("Successfully fetched users:", data);
+    }
   });
 
-  if (error) {
-    toast({
-      title: "Error loading users",
-      description: "There was a problem loading the users. Please try again.",
-      variant: "destructive",
-    });
-  }
+  // Handle error with useEffect to prevent render loop
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error loading users",
+        description: "There was a problem loading the users. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
   // Filter users based on search and role
   const filteredUsers = users?.filter(user => {
@@ -298,7 +307,7 @@ export default function UsersPage() {
             icon: <Mail size={20} />,
             label: "Messages",
             onClick: () => {
-              window.location.href = '/messages';
+              setLocation('/messages');
             },
             color: "bg-green-500 text-white"
           },
