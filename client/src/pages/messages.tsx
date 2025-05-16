@@ -23,12 +23,13 @@ export default function MessagesPage() {
   const { toast } = useToast();
 
   // Fetch recent messages
-  // Force authenticate before rendering
+  // We no longer need to force authentication here as it's handled by Router component
   useEffect(() => {
     if (!user) {
-      // This will redirect to auth page via the Router component's logic
+      // Let the Router component handle redirects
       return;
     }
+    // Only fetch messages when we have a valid user
   }, [user]);
 
   const { 
