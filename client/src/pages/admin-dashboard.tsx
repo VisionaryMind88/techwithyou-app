@@ -8,6 +8,7 @@ import { AdminMessagesList } from "@/components/admin/messages-list";
 import { ProjectAnalytics } from "@/components/admin/project-analytics";
 import { PerformanceMetrics } from "@/components/admin/performance-metrics";
 import { UserAnalytics } from "@/components/admin/user-analytics";
+import { PaymentTab } from "@/components/admin/payment-tab";
 import { Sidebar } from "@/components/sidebar";
 import { ChatModule } from "@/components/chat-module";
 import { Button } from "@/components/ui/button";
@@ -462,10 +463,11 @@ export default function AdminDashboard() {
               </div>
               
               <Tabs defaultValue="projects" className="w-full mb-8">
-                <TabsList className="grid w-full grid-cols-3 mb-4">
+                <TabsList className="grid w-full grid-cols-4 mb-4">
                   <TabsTrigger value="projects">Project Analytics</TabsTrigger>
                   <TabsTrigger value="performance">Performance Metrics</TabsTrigger>
                   <TabsTrigger value="users">User Analytics</TabsTrigger>
+                  <TabsTrigger value="payments">Payments</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="projects">
@@ -490,6 +492,10 @@ export default function AdminDashboard() {
                     projects={projectsData}
                     isLoading={isLoadingUsers || isLoadingProjects}
                   />
+                </TabsContent>
+                
+                <TabsContent value="payments">
+                  <PaymentTab />
                 </TabsContent>
               </Tabs>
             </div>
