@@ -24,7 +24,9 @@ export function AdminMessagesList({
   onViewAll
 }: AdminMessagesListProps) {
   // Helper to determine project type badge color
-  const getProjectTypeColor = (type: string): string => {
+  const getProjectTypeColor = (type: string | undefined): string => {
+    if (!type) return "bg-gray-100 text-gray-600";
+    
     switch (type.toLowerCase()) {
       case "website": case "website design":
         return "bg-blue-100 text-primary-600";
@@ -96,14 +98,26 @@ export function AdminMessagesList({
                   {message.sender.firstName} {message.sender.lastName}
                 </p>
                 <div className="flex items-center">
-                  <Badge 
-                    variant="outline" 
-                    className={`mr-2 ${getProjectTypeColor(message.project.type)} border-0`}
-                  >
-                    {message.project.type}
-                  </Badge>
+                  {message.project ? (
+                    <Badge 
+                      variant="outline" 
+                      className={`mr-2 ${getProjectTypeColor(message.project?.type)} border-0`}
+                    >
+                      {message.project.type}
+                    </Badge>
+                  ) : (
+                    <Badge 
+                      variant="outline" 
+                      className="mr-2 bg-gray-100 text-gray-600 border-0"
+                    >
+                      Algemeen
+                    </Badge>
+                  )}
                   <p className="text-xs text-gray-500">
-                    {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
+                    {message.createdAt 
+                      ? formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })
+                      : 'Recent'
+                    }
                   </p>
                 </div>
               </div>
