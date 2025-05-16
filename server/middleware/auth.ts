@@ -31,8 +31,8 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
     '/api/health'
   ];
   
-  // Special handling for /api/auth/user - it will try to get user but not enforce authentication
-  if (req.path === '/api/auth/user') {
+  // Special handling for auth routes - they will try to get user from session
+  if (req.path === '/api/auth/user' || req.path === '/api/auth/update-profile') {
     try {
       const userId = req.session?.userId;
       if (userId) {
