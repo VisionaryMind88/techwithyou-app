@@ -12,6 +12,7 @@ import { ChatModule } from "@/components/chat-module";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Menu, Bell, MessageSquare, ActivityIcon, BarChart } from "lucide-react";
+import { RiFolderLine, RiTimeLine, RiUserLine, RiChat3Line } from "react-icons/ri";
 import { OnboardingTour, adminTourSteps } from "@/components/onboarding-tour";
 import { useAuth } from "@/context/auth-context";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -25,7 +26,8 @@ interface Activity extends Omit<BaseActivity, 'referenceId' | 'referenceType' | 
   referenceId: number | null;
   referenceType: string | null;
   isRead: boolean;
-  createdAt: string;
+  createdAt: string | Date | null;
+  metadata?: unknown;
 }
 
 export default function AdminDashboard() {
@@ -167,14 +169,18 @@ export default function AdminDashboard() {
   // Stats overview data
   const pendingProjects = projectsData.filter(p => p.status === 'pending_approval').length;
   const totalProjects = projectsData.length;
-  const activeCustomers = [...new Set(projectsData.map(p => p.userId))].length;
+  // Calculate unique user IDs without using spread on Set
+  const uniqueUserIds = Array.from(new Set(projectsData.map(p => p.userId)));
+  const activeCustomers = uniqueUserIds.length;
   const unreadMessages = messagesData.length;
 
+  // Use the icons for stats
+  
   const stats = {
     totalProjects: {
       label: "Total Projects",
       value: totalProjects,
-      icon: "folder",
+      icon: RiFolderLine,
       color: "text-primary-600",
       bgColor: "bg-blue-100",
       change: {
@@ -186,7 +192,7 @@ export default function AdminDashboard() {
     pendingApprovals: {
       label: "Pending Approvals",
       value: pendingProjects,
-      icon: "time",
+      icon: RiTimeLine,
       color: "text-warning",
       bgColor: "bg-yellow-100",
       change: {
@@ -198,7 +204,7 @@ export default function AdminDashboard() {
     activeCustomers: {
       label: "Active Customers",
       value: activeCustomers,
-      icon: "user",
+      icon: RiUserLine,
       color: "text-success",
       bgColor: "bg-green-100",
       change: {
@@ -210,7 +216,7 @@ export default function AdminDashboard() {
     unreadMessages: {
       label: "Unread Messages",
       value: unreadMessages,
-      icon: "chat",
+      icon: RiChat3Line,
       color: "text-purple-600",
       bgColor: "bg-purple-100",
       change: {

@@ -5,10 +5,21 @@ import {
   RiUserAddLine,
   RiFileChartLine
 } from "react-icons/ri";
-import { Activity, User } from "@shared/schema";
+import { User } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface ActivityItem extends Activity {
+// Extend the Activity type to match our database model
+interface ActivityItem {
+  id: number;
+  type: string;
+  description: string;
+  projectId: number | null;
+  userId: number;
+  referenceId: number | null;
+  referenceType: string | null;
+  isRead: boolean;
+  metadata: unknown;
+  createdAt: string | Date | null;
   user: User;
 }
 
