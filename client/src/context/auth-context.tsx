@@ -419,10 +419,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+// Helper function to merge local profile data with server user data
+const mergeWithLocalProfile = (serverUser: User | null): User | null => {
+  if (!serverUser) return null;
+  
+  try {
+    // Try to get locally stored profile data
+    const storedProfileJSON = localStorage.getItem('userProfile');
+    if (!storedProfileJSON) return serverUser;
+    
+    const storedProfile = JSON.parse(storedProfileJSON);
+    const storedProfilePicture = localStorage.getItem('profilePicture');
+    
+    // Create a merged user object with local changes overriding server data
+    return {
+      ...serverUser,
+      firstName: storedProfile.firstName || serverUser.firstName,
+      lastName: storedProfile.lastName || serverUser.lastName,
+      email: storedProfile.email || serverUser.email,
+      profilePicture: storedProfilePicture || storedProfile.profilePicture || serverUser.profilePicture
+    };
+  } catch (e) {
+    console.error('Error merging local profile data:', e);
+    return serverUser;
+  }
+};
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
-  return context;
+  
+  // Apply the local profile data when returning the context
+  const mergedContext = {
+    ...context,
+    user: mergeWithLocalProfile(context.user)
+  };
+  
+  return mergedContext;
 };

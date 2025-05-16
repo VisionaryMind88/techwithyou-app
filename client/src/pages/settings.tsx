@@ -37,15 +37,36 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("account");
 
-  // Form states
-  const [firstName, setFirstName] = useState(user?.firstName || "");
-  const [lastName, setLastName] = useState(user?.lastName || "");
-  const [email, setEmail] = useState(user?.email || "");
+  // Initialize form states from localStorage if available, otherwise from user object
+  const getLocalProfile = () => {
+    try {
+      const storedProfile = localStorage.getItem('userProfile');
+      if (storedProfile) {
+        return JSON.parse(storedProfile);
+      }
+    } catch (e) {
+      console.error('Failed to parse local profile:', e);
+    }
+    return null;
+  };
+
+  const localProfile = getLocalProfile();
+
+  // Form states - prioritize localStorage data over server data
+  const [firstName, setFirstName] = useState(localProfile?.firstName || user?.firstName || "");
+  const [lastName, setLastName] = useState(localProfile?.lastName || user?.lastName || "");
+  const [email, setEmail] = useState(localProfile?.email || user?.email || "");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [profilePicture, setProfilePicture] = useState<string | null>(user?.profilePicture || null);
+  
+  // Try to get profile picture from localStorage first
+  const storedProfilePicture = localStorage.getItem('profilePicture');
+  const [profilePicture, setProfilePicture] = useState<string | null>(
+    storedProfilePicture || localProfile?.profilePicture || user?.profilePicture || null
+  );
+  
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
