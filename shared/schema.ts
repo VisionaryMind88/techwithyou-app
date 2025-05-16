@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, foreignKey } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, foreignKey, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -14,6 +14,7 @@ export const users = pgTable("users", {
   provider: text("provider"), // local, google, github
   providerId: text("provider_id"),
   rememberToken: text("remember_token"),
+  stripeCustomerId: text("stripe_customer_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -217,5 +218,53 @@ export type InsertFile = z.infer<typeof insertFileSchema>;
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
+// PAYMENTS
+export const payments = pgTable("payments", {
+  id: serial("id").primaryKey(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: text("currency").notNull().default("usd"),
+  status: text("status").notNull().default("pending"), // pending, completed, failed, canceled
+  description: text("description"),
+  projectId: integer("project_id").notNull(),
+  userId: integer("user_id").notNull(), // customer who will make the payment
+  createdById: integer("created_by_id").notNull(), // admin who created the payment request
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  messageId: integer("message_id"), // related message with payment request
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at"),
+});
+
+export const insertPaymentSchema = createInsertSchema(payments).pick({
+  amount: true,
+  currency: true,
+  description: true,
+  projectId: true,
+  userId: true,
+  createdById: true,
+  messageId: true,
+});
+
+export const paymentsRelations = relations(payments, ({ one }) => ({
+  project: one(projects, {
+    fields: [payments.projectId],
+    references: [projects.id],
+  }),
+  user: one(users, {
+    fields: [payments.userId],
+    references: [users.id],
+  }),
+  createdBy: one(users, {
+    fields: [payments.createdById],
+    references: [users.id],
+  }),
+  message: one(messages, {
+    fields: [payments.messageId],
+    references: [messages.id],
+  }),
+}));
+
 export type Activity = typeof activities.$inferSelect;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
+
+export type Payment = typeof payments.$inferSelect;
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;

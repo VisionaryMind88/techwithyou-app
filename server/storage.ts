@@ -29,6 +29,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
   deleteUser(id: number): Promise<boolean>;
+  updateStripeCustomerId(userId: number, stripeCustomerId: string): Promise<User>;
   
   // Projects
   getProject(id: number): Promise<Project | undefined>;
@@ -60,6 +61,16 @@ export interface IStorage {
   getUserActivities(userId: number, limit?: number): Promise<Activity[]>;
   createActivity(activity: InsertActivity): Promise<Activity>;
   updateActivity(id: number, updates: Partial<Activity>): Promise<Activity | undefined>;
+  
+  // Payments
+  getPayment(id: number): Promise<Payment | undefined>;
+  getPaymentsByUser(userId: number): Promise<Payment[]>;
+  getPaymentsByProject(projectId: number): Promise<Payment[]>;
+  getAllPayments(limit?: number): Promise<Payment[]>;
+  getPendingPayments(): Promise<Payment[]>;
+  createPayment(payment: InsertPayment): Promise<Payment>;
+  updatePayment(id: number, updates: Partial<Payment>): Promise<Payment | undefined>;
+  updatePaymentStatus(id: number, status: string, stripePaymentIntentId?: string): Promise<Payment | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
