@@ -135,8 +135,9 @@ export function LiveTracker({ item, onStatusChange }: TrackingItemProps) {
         // For internal links, use the router to navigate
         navigate(item.url);
       } else {
-        // For external links, we'll use a controlled window
-        window.open(item.url, 'trackerView', 'width=800,height=600,resizable=yes');
+        // For external links, implement iframe or embed in the current app
+        // Create a custom URL for the tracking view within our app
+        navigate(`/tracking/view?url=${encodeURIComponent(item.url)}&name=${encodeURIComponent(item.name)}`);
       }
     }
   };
