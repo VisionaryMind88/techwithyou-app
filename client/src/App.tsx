@@ -21,8 +21,8 @@ import { ThemeProvider } from "next-themes";
 import { handleAuthRedirect } from "./lib/firebase";
 import { useToast } from "./hooks/use-toast";
 import { AccessibilityProvider } from "./contexts/AccessibilityContext";
-import SkipToContent from "./components/accessibility/SkipToContent";
-import AccessibilitySettings from "./components/accessibility/AccessibilitySettings";
+import { SkipToContent } from "./components/accessibility/SkipToContent";
+import { AccessibilitySettings } from "./components/accessibility/AccessibilitySettings";
 
 // Component to handle auth redirects
 function AuthRedirectHandler() {
