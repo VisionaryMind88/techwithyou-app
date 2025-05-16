@@ -250,6 +250,25 @@ export function registerAuthRoutes(app: Express) {
   // Get all users (admin only)
   app.get("/api/users/admin", async (req: AuthRequest, res: Response) => {
     try {
+      console.log('GET /api/users/admin route accessed, session details:', {
+        sessionExists: !!req.session,
+        sessionId: req.sessionID,
+        sessionUserId: req.session?.userId,
+        hasUser: !!req.user
+      });
+      
+      // Try to get user from session if req.user is not set
+      if (!req.user && req.session?.userId) {
+        console.log(`No req.user but found userId ${req.session.userId} in session, looking up for admin check...`);
+        const sessionUser = await storage.getUser(req.session.userId);
+        if (sessionUser) {
+          console.log('Found user via session userId for admin check:', sessionUser.email);
+          req.user = sessionUser;
+        } else {
+          console.log('No user found for session userId:', req.session.userId);
+        }
+      }
+      
       if (!req.user) {
         return res.status(401).json({ message: 'Authentication required' });
       }
@@ -258,6 +277,7 @@ export function registerAuthRoutes(app: Express) {
         return res.status(403).json({ message: 'Admin access required' });
       }
       
+      console.log('Admin user authenticated for users list:', req.user.email);
       const users = await storage.getAllUsers();
       
       // Remove sensitive information like passwords
@@ -266,6 +286,7 @@ export function registerAuthRoutes(app: Express) {
         return userWithoutPassword;
       });
       
+      console.log(`Found ${sanitizedUsers.length} users`);
       res.json(sanitizedUsers);
     } catch (error) {
       console.error('Get all users error:', error);

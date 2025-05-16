@@ -43,17 +43,32 @@ export default function UsersPage() {
   const {
     data: users,
     isLoading,
-    error
+    error,
+    refetch
   } = useQuery<User[]>({
     queryKey: ["/api/users/admin"],
     enabled: !!user && user.role === "admin",
-    onError: (err) => {
-      console.error("Error fetching users:", err);
-    },
-    onSuccess: (data) => {
-      console.log("Successfully fetched users:", data);
+    // Custom fetcher to ensure credentials are included
+    queryFn: async () => {
+      const res = await fetch("/api/users/admin", {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to fetch users: ${res.statusText}`);
+      }
+      return res.json();
     }
   });
+  
+  // Log any errors or successful data for debugging
+  useEffect(() => {
+    if (error) {
+      console.error("Error fetching users:", error);
+    }
+    if (users) {
+      console.log("Successfully fetched users:", users);
+    }
+  }, [error, users]);
 
   // Handle error with useEffect to prevent render loop
   useEffect(() => {
