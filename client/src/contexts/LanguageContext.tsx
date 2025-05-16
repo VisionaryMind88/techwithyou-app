@@ -226,6 +226,10 @@ const translations: Translations = {
     nl: 'Bericht verzenden mislukt. Probeer het opnieuw.',
     en: 'Failed to send message. Please try again.',
   },
+  'messages.send': {
+    nl: 'Bericht versturen',
+    en: 'Send Message',
+  },
   
   // Settings
   'settings.title': {
