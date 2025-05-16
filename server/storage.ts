@@ -229,24 +229,87 @@ export class DatabaseStorage implements IStorage {
   
   // Users
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      
+      if (!user) return undefined;
+      
+      // Add profilePicture property manually since it's not in the database yet
+      return {
+        ...user,
+        profilePicture: null
+      };
+    } catch (error) {
+      console.error("Error in getUser:", error);
+      return undefined;
+    }
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user || undefined;
+    try {
+      const [user] = await db.select().from(users).where(eq(users.email, email));
+      
+      if (!user) return undefined;
+      
+      // Add profilePicture property manually since it's not in the database yet
+      return {
+        ...user,
+        profilePicture: null
+      };
+    } catch (error) {
+      console.error("Error in getUserByEmail:", error);
+      return undefined;
+    }
   }
   
   async getUserByRememberToken(token: string): Promise<User[]> {
-    const foundUsers = await db.select()
+    try {
+      const foundUsers = await db.select({
+        id: users.id,
+        email: users.email,
+        password: users.password,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        role: users.role,
+        provider: users.provider,
+        providerId: users.providerId,
+        rememberToken: users.rememberToken,
+        stripeCustomerId: users.stripeCustomerId,
+        createdAt: users.createdAt
+      })
       .from(users)
       .where(eq(users.rememberToken, token));
-    return foundUsers;
+      
+      // Add profilePicture property to each user
+      return foundUsers.map(user => ({ ...user, profilePicture: null }));
+    } catch (error) {
+      console.error("Error in getUserByRememberToken:", error);
+      return [];
+    }
   }
   
   async getAllUsers(): Promise<User[]> {
-    return await db.select().from(users);
+    try {
+      const allUsers = await db.select({
+        id: users.id,
+        email: users.email,
+        password: users.password,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        role: users.role,
+        provider: users.provider,
+        providerId: users.providerId,
+        rememberToken: users.rememberToken,
+        stripeCustomerId: users.stripeCustomerId,
+        createdAt: users.createdAt
+      }).from(users);
+      
+      // Add profilePicture property to each user
+      return allUsers.map(user => ({ ...user, profilePicture: null }));
+    } catch (error) {
+      console.error("Error in getAllUsers:", error);
+      return [];
+    }
   }
 
   async createUser(user: InsertUser): Promise<User> {
