@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,29 +33,22 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
-const userFormSchema = enhancedUserSchema.pick({
-  email: true,
-  password: true,
-  firstName: true,
-  lastName: true,
-  role: true,
-}).refine(
-  (data) => {
-    // Password is required when adding a new user
-    return !!data.password;
-  },
-  {
-    message: "Password is required",
-    path: ["password"],
-  }
-);
+// Definieer de basis schema
+const baseUserSchema = z.object({
+  email: z.string().email("Voer een geldig e-mailadres in"),
+  firstName: z.string().min(1, "Voornaam is verplicht"),
+  lastName: z.string().optional(),
+  role: z.enum(["admin", "customer"]),
+  password: z.string().optional(),
+});
 
-type UserFormValues = z.infer<typeof userFormSchema>;
+// Type voor de formulierwaarden
+type UserFormValues = z.infer<typeof baseUserSchema>;
 
 interface UserFormProps {
   isOpen: boolean;
   onClose: () => void;
-  user?: User;
+  user?: any; // Gebruik any om typeproblemen te voorkomen
 }
 
 export function UserForm({ isOpen, onClose, user }: UserFormProps) {
@@ -63,27 +56,49 @@ export function UserForm({ isOpen, onClose, user }: UserFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditMode = !!user;
 
-  // Voor het bewerken van een gebruiker is het wachtwoord optioneel
-  const schema = isEditMode
-    ? z.object({
-        email: userFormSchema.shape.email,
-        firstName: userFormSchema.shape.firstName,
-        lastName: userFormSchema.shape.lastName,
-        role: userFormSchema.shape.role,
-        password: z.string().optional(),
-      })
-    : userFormSchema;
+  // Schema voor nieuw gebruiker (wachtwoord verplicht)
+  const newUserSchema = baseUserSchema.extend({
+    password: z.string().min(1, "Wachtwoord is verplicht"),
+  });
 
+  // Schema voor het bewerken van een gebruiker (wachtwoord optioneel)
+  const editUserSchema = baseUserSchema;
+
+  // Kies het juiste schema op basis van de modus
+  const schema = isEditMode ? editUserSchema : newUserSchema;
+
+  // Initialiseer het formulier
   const form = useForm<UserFormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      email: user?.email || "",
+      email: "",
       password: "",
-      firstName: user?.firstName || "",
-      lastName: user?.lastName || "",
-      role: user?.role || "customer",
+      firstName: "",
+      lastName: "",
+      role: "customer",
     },
   });
+
+  // Update defaultValues wanneer de user prop verandert
+  useEffect(() => {
+    if (user) {
+      form.reset({
+        email: user.email || "",
+        password: "", // Wachtwoord altijd leeg bij bewerken
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        role: user.role || "customer",
+      });
+    } else {
+      form.reset({
+        email: "",
+        password: "",
+        firstName: "",
+        lastName: "",
+        role: "customer",
+      });
+    }
+  }, [user, form]);
 
   const onSubmit = async (values: UserFormValues) => {
     setIsSubmitting(true);
@@ -91,8 +106,8 @@ export function UserForm({ isOpen, onClose, user }: UserFormProps) {
       let response;
       
       if (isEditMode && user) {
-        // Update existing user
-        // Verwijder lege wachtwoord veld indien niet ingevuld
+        // Update bestaande gebruiker
+        // Verwijder leeg wachtwoord veld indien niet ingevuld
         const updateData = {...values};
         if (!updateData.password) {
           delete updateData.password;
@@ -102,39 +117,39 @@ export function UserForm({ isOpen, onClose, user }: UserFormProps) {
         
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to update user");
+          throw new Error(errorData.message || "Fout bij bijwerken gebruiker");
         }
         
         toast({
-          title: "User updated",
-          description: "The user has been successfully updated",
+          title: "Gebruiker bijgewerkt",
+          description: "De gebruiker is succesvol bijgewerkt",
         });
       } else {
-        // Create new user
+        // Maak nieuwe gebruiker aan
         response = await apiRequest("POST", "/api/auth/register", values);
         
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to create user");
+          throw new Error(errorData.message || "Fout bij aanmaken gebruiker");
         }
         
         toast({
-          title: "User created",
-          description: "The user has been successfully created",
+          title: "Gebruiker aangemaakt",
+          description: "De gebruiker is succesvol aangemaakt",
         });
       }
 
-      // Invalidate queries to refresh data
+      // Invalideer queries om gegevens te vernieuwen
       queryClient.invalidateQueries({ queryKey: ["/api/users/admin"] });
       
-      // Reset form and close dialog
+      // Reset formulier en sluit dialog
       form.reset();
       onClose();
     } catch (error: any) {
-      console.error(`Error ${isEditMode ? "updating" : "creating"} user:`, error);
+      console.error(`Fout bij ${isEditMode ? "bijwerken" : "aanmaken"} gebruiker:`, error);
       toast({
-        title: "Error",
-        description: error.message || `An error occurred while ${isEditMode ? "updating" : "creating"} user`,
+        title: "Fout",
+        description: error.message || `Er is een fout opgetreden bij het ${isEditMode ? "bijwerken" : "aanmaken"} van de gebruiker`,
         variant: "destructive",
       });
     } finally {
@@ -146,11 +161,11 @@ export function UserForm({ isOpen, onClose, user }: UserFormProps) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{isEditMode ? "Edit User" : "Add New User"}</DialogTitle>
+          <DialogTitle>{isEditMode ? "Gebruiker bewerken" : "Nieuwe gebruiker toevoegen"}</DialogTitle>
           <DialogDescription>
             {isEditMode 
-              ? "Update the user information below." 
-              : "Create a new user account. Fill out the information below."
+              ? "Werk de gebruikersinformatie hieronder bij." 
+              : "Maak een nieuw gebruikersaccount aan. Vul de informatie hieronder in."
             }
           </DialogDescription>
         </DialogHeader>
@@ -161,10 +176,10 @@ export function UserForm({ isOpen, onClose, user }: UserFormProps) {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>E-mail</FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder="user@example.com" 
+                      placeholder="gebruiker@voorbeeld.com" 
                       type="email" 
                       {...field} 
                     />
@@ -179,10 +194,10 @@ export function UserForm({ isOpen, onClose, user }: UserFormProps) {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>{isEditMode ? "Wachtwoord (optioneel)" : "Wachtwoord"}</FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder="Enter password" 
+                      placeholder={isEditMode ? "Laat leeg om ongewijzigd te laten" : "Voer wachtwoord in"} 
                       type="password" 
                       {...field} 
                     />
@@ -198,9 +213,9 @@ export function UserForm({ isOpen, onClose, user }: UserFormProps) {
                 name="firstName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>First Name</FormLabel>
+                    <FormLabel>Voornaam</FormLabel>
                     <FormControl>
-                      <Input placeholder="John" {...field} />
+                      <Input placeholder="Jan" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -212,9 +227,9 @@ export function UserForm({ isOpen, onClose, user }: UserFormProps) {
                 name="lastName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Last Name</FormLabel>
+                    <FormLabel>Achternaam</FormLabel>
                     <FormControl>
-                      <Input placeholder="Doe" {...field} />
+                      <Input placeholder="Jansen" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -227,19 +242,19 @@ export function UserForm({ isOpen, onClose, user }: UserFormProps) {
               name="role"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>User Role</FormLabel>
+                  <FormLabel>Gebruikersrol</FormLabel>
                   <Select 
                     onValueChange={field.onChange} 
                     defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a role" />
+                        <SelectValue placeholder="Selecteer een rol" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="customer">Customer</SelectItem>
+                      <SelectItem value="admin">Beheerder</SelectItem>
+                      <SelectItem value="customer">Klant</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -249,11 +264,11 @@ export function UserForm({ isOpen, onClose, user }: UserFormProps) {
             
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
+                Annuleren
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isEditMode ? "Update User" : "Create User"}
+                {isEditMode ? "Gebruiker bijwerken" : "Gebruiker aanmaken"}
               </Button>
             </DialogFooter>
           </form>
