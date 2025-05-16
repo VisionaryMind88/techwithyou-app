@@ -634,13 +634,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getRecentMessages(userId: number, limit: number = 10): Promise<Message[]> {
-    // This is a simplified implementation - in a real app, you would join with projects
-    // to find messages for projects where this user is a participant
-    return await db
-      .select()
-      .from(messages)
-      .orderBy(desc(messages.createdAt))
-      .limit(limit);
+    try {
+      // Get messages where the user is either sender or recipient
+      return await db
+        .select()
+        .from(messages)
+        .where(
+          or(
+            eq(messages.senderId, userId),
+            eq(messages.recipientId, userId)
+          )
+        )
+        .orderBy(desc(messages.createdAt))
+        .limit(limit);
+    } catch (error) {
+      console.error("Get recent messages error:", error);
+      throw error;
+    }
   }
 
   async getUnreadMessages(isAdmin: boolean = false): Promise<Message[]> {
