@@ -77,9 +77,8 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
       if (user) {
         // Attach user to request
         req.user = user;
-        console.log('User attached to request');
-        next();
-        return;
+        console.log(`User attached to request: ${user.email}`);
+        return next();
       } else {
         // If user not found, clear the session
         console.log('User not found in database despite having userId in session');
@@ -117,8 +116,7 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
           metadata: { method: 'remember_token' },
         });
         
-        next();
-        return;
+        return next();
       }
     }
     
