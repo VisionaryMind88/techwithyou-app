@@ -1,411 +1,320 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { ChevronDown, MoreVertical, PlusCircle } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
 import { PaymentRequestForm } from "./payment-request-form";
+import { Project, User, Payment } from "@shared/schema";
+import { Loader2, ArrowUpRight, FileText, Check, XCircle, AlertTriangle, Filter } from "lucide-react";
+import { format } from "date-fns";
+import { Link } from "wouter";
 
-// Status badges
+// Status badge component
 const PaymentStatusBadge = ({ status }: { status: string }) => {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "bg-green-100 text-green-800";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "failed":
-        return "bg-red-100 text-red-800";
-      case "canceled":
-        return "bg-gray-100 text-gray-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
+  const statusConfig = {
+    pending: { variant: "outline", icon: <FileText className="h-3 w-3 mr-1" />, label: "Pending" },
+    completed: { variant: "success", icon: <Check className="h-3 w-3 mr-1" />, label: "Completed" },
+    failed: { variant: "destructive", icon: <XCircle className="h-3 w-3 mr-1" />, label: "Failed" },
+    canceled: { variant: "secondary", icon: <AlertTriangle className="h-3 w-3 mr-1" />, label: "Canceled" }
   };
 
+  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+  
   return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-        status
-      )}`}
-    >
-      {status.charAt(0).toUpperCase() + status.slice(1)}
-    </span>
+    <Badge variant={config.variant as any} className="inline-flex items-center">
+      {config.icon}
+      {config.label}
+    </Badge>
   );
 };
 
-// No longer needed as we're using the PaymentRequestForm component
-
-export function PaymentTab() {
-  const [isNewPaymentOpen, setIsNewPaymentOpen] = useState(false);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  // Fetch all projects for the dropdown
-  const { data: projectsData } = useQuery({
-    queryKey: ["/api/projects/admin"],
-  });
-
-  // Fetch users for the dropdown
-  const { data: usersData } = useQuery({
-    queryKey: ["/api/users/admin"],
-  });
-
-  // Fetch all payments
-  const { data: paymentsData, isLoading: isLoadingPayments } = useQuery({
-    queryKey: ["/api/payments/admin"],
-  });
-
-  // Update payment status mutation
-  const updatePaymentStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: number; status: string }) => {
-      return await apiRequest("PATCH", `/api/payments/${id}/status`, { status });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Payment status updated",
-        description: "The payment status has been updated successfully.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/payments/admin"] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error updating payment status",
-        description: error.message || "There was an error updating the payment status.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Payment stats calculation
-  const getPaymentStats = () => {
-    if (!paymentsData?.payments) return { total: 0, pending: 0, completed: 0, failed: 0 };
-
-    const payments = paymentsData.payments;
-    
-    return {
-      total: payments.length,
-      pending: payments.filter((p: any) => p.status === "pending").length,
-      completed: payments.filter((p: any) => p.status === "completed").length,
-      failed: payments.filter((p: any) => p.status === "failed").length,
-      canceled: payments.filter((p: any) => p.status === "canceled").length,
-      totalAmount: payments
-        .filter((p: any) => p.status === "completed")
-        .reduce((sum: number, p: any) => sum + parseFloat(p.amount), 0)
-        .toFixed(2),
-    };
-  };
-
-  const stats = getPaymentStats();
-
-  // Find project and user names
-  const getProjectName = (projectId: number) => {
-    if (!projectsData?.projects) return "Unknown Project";
-    const project = projectsData.projects.find((p: any) => p.id === projectId);
-    return project ? project.name : "Unknown Project";
-  };
-
+// Payment table component
+const PaymentsTable = ({ payments, users, projects }: { 
+  payments: Payment[], 
+  users: User[],
+  projects: Project[]
+}) => {
+  // Helper function to find user or project name
   const getUserName = (userId: number) => {
-    if (!usersData?.users) return "Unknown User";
-    const user = usersData.users.find((u: any) => u.id === userId);
-    return user ? `${user.firstName} ${user.lastName}` : "Unknown User";
+    const user = users.find(u => u.id === userId);
+    if (!user) return "Unknown";
+    return user.firstName && user.lastName 
+      ? `${user.firstName} ${user.lastName}`
+      : user.email;
   };
-
+  
+  const getProjectName = (projectId: number) => {
+    const project = projects.find(p => p.id === projectId);
+    return project ? project.name : "N/A";
+  };
+  
+  const handleUpdateStatus = async (paymentId: number, newStatus: string) => {
+    try {
+      const response = await apiRequest("PATCH", `/api/payments/${paymentId}/status`, { status: newStatus });
+      
+      if (!response.ok) {
+        throw new Error("Failed to update payment status");
+      }
+      
+      // Refresh payment data
+      queryClient.invalidateQueries({ queryKey: ['/api/payments/admin'] });
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+    }
+  };
+  
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Payment Management</h2>
-        <Dialog open={isNewPaymentOpen} onOpenChange={setIsNewPaymentOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              New Payment Request
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Create New Payment Request</DialogTitle>
-              <DialogDescription>
-                Create a payment request that will be sent to the customer via chat message.
-              </DialogDescription>
-            </DialogHeader>
-            <PaymentRequestForm 
-              projects={projectsData?.projects || []}
-              users={usersData?.users || []}
-              onSuccess={() => {
-                setIsNewPaymentOpen(false);
-                toast({
-                  title: "Payment Request Sent",
-                  description: "The payment request has been sent to the customer.",
-                });
-                // Refresh data
-                queryClient.invalidateQueries({ queryKey: ["/api/payments/admin"] });
-              }}
-              onCancel={() => setIsNewPaymentOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Payments
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Pending Payments
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.pending}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Completed Payments
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.completed}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Revenue
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${stats.totalAmount || "0.00"}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs defaultValue="all">
-        <TabsList>
-          <TabsTrigger value="all">All Payments</TabsTrigger>
-          <TabsTrigger value="pending">Pending</TabsTrigger>
-          <TabsTrigger value="completed">Completed</TabsTrigger>
-          <TabsTrigger value="failed">Failed</TabsTrigger>
-        </TabsList>
-        <TabsContent value="all" className="mt-4">
-          <PaymentTable
-            payments={paymentsData?.payments || []}
-            getProjectName={getProjectName}
-            getUserName={getUserName}
-            onUpdateStatus={(id, status) =>
-              updatePaymentStatusMutation.mutate({ id, status })
-            }
-            isLoading={isLoadingPayments}
-          />
-        </TabsContent>
-        <TabsContent value="pending" className="mt-4">
-          <PaymentTable
-            payments={(paymentsData?.payments || []).filter((p: any) => p.status === "pending")}
-            getProjectName={getProjectName}
-            getUserName={getUserName}
-            onUpdateStatus={(id, status) =>
-              updatePaymentStatusMutation.mutate({ id, status })
-            }
-            isLoading={isLoadingPayments}
-          />
-        </TabsContent>
-        <TabsContent value="completed" className="mt-4">
-          <PaymentTable
-            payments={(paymentsData?.payments || []).filter((p: any) => p.status === "completed")}
-            getProjectName={getProjectName}
-            getUserName={getUserName}
-            onUpdateStatus={(id, status) =>
-              updatePaymentStatusMutation.mutate({ id, status })
-            }
-            isLoading={isLoadingPayments}
-          />
-        </TabsContent>
-        <TabsContent value="failed" className="mt-4">
-          <PaymentTable
-            payments={(paymentsData?.payments || []).filter((p: any) => p.status === "failed")}
-            getProjectName={getProjectName}
-            getUserName={getUserName}
-            onUpdateStatus={(id, status) =>
-              updatePaymentStatusMutation.mutate({ id, status })
-            }
-            isLoading={isLoadingPayments}
-          />
-        </TabsContent>
-      </Tabs>
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Date</TableHead>
+            <TableHead>Customer</TableHead>
+            <TableHead>Project</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {payments.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                No payments found
+              </TableCell>
+            </TableRow>
+          ) : (
+            payments.map(payment => (
+              <TableRow key={payment.id}>
+                <TableCell>
+                  {payment.createdAt ? format(new Date(payment.createdAt), 'MMM d, yyyy') : 'N/A'}
+                </TableCell>
+                <TableCell>{getUserName(payment.userId)}</TableCell>
+                <TableCell>
+                  {payment.projectId > 0 ? (
+                    <Link to={`/project-detail/${payment.projectId}`} className="text-primary hover:underline flex items-center">
+                      {getProjectName(payment.projectId)}
+                      <ArrowUpRight className="ml-1 h-3 w-3" />
+                    </Link>
+                  ) : (
+                    "N/A"
+                  )}
+                </TableCell>
+                <TableCell>${payment.amount.toFixed(2)}</TableCell>
+                <TableCell className="max-w-[200px] truncate" title={payment.description}>
+                  {payment.description}
+                </TableCell>
+                <TableCell>
+                  <PaymentStatusBadge status={payment.status} />
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    {payment.status === 'pending' && (
+                      <>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleUpdateStatus(payment.id, 'completed')}
+                        >
+                          Mark Paid
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleUpdateStatus(payment.id, 'canceled')}
+                        >
+                          Cancel
+                        </Button>
+                      </>
+                    )}
+                    {payment.status === 'failed' && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleUpdateStatus(payment.id, 'pending')}
+                      >
+                        Retry
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
-}
+};
 
-function PaymentTable({
-  payments,
-  getProjectName,
-  getUserName,
-  onUpdateStatus,
-  isLoading,
-}: {
-  payments: any[];
-  getProjectName: (id: number) => string;
-  getUserName: (id: number) => string;
-  onUpdateStatus: (id: number, status: string) => void;
-  isLoading: boolean;
-}) {
+export function PaymentTab() {
+  const [activeTab, setActiveTab] = useState<string>("all");
+  
+  // Fetch payments
+  const { data: paymentsData, isLoading: paymentsLoading } = useQuery<{ payments: Payment[] }>({
+    queryKey: ['/api/payments/admin'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/payments/admin');
+      if (!response.ok) {
+        throw new Error('Failed to fetch payments');
+      }
+      return response.json();
+    }
+  });
+  
+  // Fetch users
+  const { data: usersData, isLoading: usersLoading } = useQuery<User[]>({
+    queryKey: ['/api/auth/users'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/auth/users');
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      return response.json();
+    }
+  });
+  
+  // Fetch projects
+  const { data: projectsData, isLoading: projectsLoading } = useQuery<Project[]>({
+    queryKey: ['/api/projects'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/projects');
+      if (!response.ok) {
+        throw new Error('Failed to fetch projects');
+      }
+      return response.json();
+    }
+  });
+  
+  const isLoading = paymentsLoading || usersLoading || projectsLoading;
+  
+  const payments = paymentsData?.payments || [];
+  const users = usersData || [];
+  const projects = projectsData || [];
+  
+  // Filter payments based on active tab
+  const filteredPayments = payments.filter(payment => {
+    if (activeTab === 'all') return true;
+    return payment.status === activeTab;
+  });
+  
   return (
-    <Card>
-      <CardContent className="p-0">
-        <Table>
-          <TableCaption>
-            {isLoading
-              ? "Loading payments..."
-              : payments.length === 0
-              ? "No payments found"
-              : "List of all payment requests"}
-          </TableCaption>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Project</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center">
-                  Loading...
-                </TableCell>
-              </TableRow>
-            ) : payments.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center">
-                  No payments found
-                </TableCell>
-              </TableRow>
-            ) : (
-              payments.map((payment: any) => (
-                <TableRow key={payment.id}>
-                  <TableCell className="font-medium">{payment.id}</TableCell>
-                  <TableCell>${parseFloat(payment.amount).toFixed(2)}</TableCell>
-                  <TableCell>{getProjectName(payment.projectId)}</TableCell>
-                  <TableCell>{getUserName(payment.userId)}</TableCell>
-                  <TableCell>
-                    {payment.createdAt
-                      ? format(new Date(payment.createdAt), "MMM d, yyyy")
-                      : "N/A"}
-                  </TableCell>
-                  <TableCell>
-                    <PaymentStatusBadge status={payment.status} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {payment.status === "pending" && (
-                          <>
-                            <DropdownMenuItem
-                              onClick={() => onUpdateStatus(payment.id, "completed")}
-                            >
-                              Mark as Completed
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => onUpdateStatus(payment.id, "failed")}
-                            >
-                              Mark as Failed
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => onUpdateStatus(payment.id, "canceled")}
-                            >
-                              Cancel Payment
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                        {payment.status === "failed" && (
-                          <DropdownMenuItem
-                            onClick={() => onUpdateStatus(payment.id, "pending")}
-                          >
-                            Retry Payment
-                          </DropdownMenuItem>
-                        )}
-                        {payment.status === "canceled" && (
-                          <DropdownMenuItem
-                            onClick={() => onUpdateStatus(payment.id, "pending")}
-                          >
-                            Reactivate Payment
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* Payment Request Form */}
+        <div className="md:w-1/3">
+          <PaymentRequestForm 
+            users={users} 
+            projects={projects} 
+            onSuccess={() => queryClient.invalidateQueries({ queryKey: ['/api/payments/admin'] })}
+          />
+        </div>
+        
+        {/* Payment Stats Cards */}
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Total Payments</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {isLoading ? <Loader2 className="animate-spin h-6 w-6" /> : payments.length}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {isLoading ? 'Loading...' : 'All time'}
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {isLoading ? (
+                  <Loader2 className="animate-spin h-6 w-6" />
+                ) : (
+                  `$${payments
+                    .filter(p => p.status === 'completed')
+                    .reduce((sum, payment) => sum + payment.amount, 0)
+                    .toFixed(2)}`
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {isLoading ? 'Loading...' : 'Completed payments'}
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Pending Amount</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {isLoading ? (
+                  <Loader2 className="animate-spin h-6 w-6" />
+                ) : (
+                  `$${payments
+                    .filter(p => p.status === 'pending')
+                    .reduce((sum, payment) => sum + payment.amount, 0)
+                    .toFixed(2)}`
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {isLoading ? 'Loading...' : 'Awaiting payment'}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+      
+      {/* Payments List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Payments</CardTitle>
+          <CardDescription>Manage all customer payments</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <div className="flex items-center justify-between mb-4">
+              <TabsList>
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="pending">Pending</TabsTrigger>
+                <TabsTrigger value="completed">Completed</TabsTrigger>
+                <TabsTrigger value="failed">Failed</TabsTrigger>
+                <TabsTrigger value="canceled">Canceled</TabsTrigger>
+              </TabsList>
+              
+              <div className="flex items-center">
+                <Button variant="outline" size="sm" className="ml-auto hidden md:flex">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filter
+                </Button>
+              </div>
+            </div>
+            
+            <TabsContent value={activeTab} className="mt-0">
+              {isLoading ? (
+                <div className="flex justify-center items-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : (
+                <PaymentsTable 
+                  payments={filteredPayments} 
+                  users={users} 
+                  projects={projects} 
+                />
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
