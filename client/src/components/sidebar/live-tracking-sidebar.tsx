@@ -7,17 +7,20 @@ import {
   ExternalLink,
   ChevronRight, 
   ChevronDown,
-  CircleDashed
+  CircleDashed,
+  Search
 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { LiveTracker } from "../live-tracking/live-tracker";
 
 export function LiveTrackingSidebar() {
   const [isOpen, setIsOpen] = useState(true);
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const { user, isAuthenticated } = useAuth();
   
   const { data: trackingData, isLoading } = useQuery({
@@ -26,7 +29,12 @@ export function LiveTrackingSidebar() {
   });
   
   const trackingItems = trackingData?.trackingItems || [];
-  const activeItems = trackingItems.filter((item: any) => item.isActive);
+  const activeItems = trackingItems
+    .filter((item: any) => item.isActive)
+    .filter((item: any) => 
+      searchTerm === '' || 
+      item.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   
   return (
     <div className="space-y-4 py-2">
@@ -47,13 +55,36 @@ export function LiveTrackingSidebar() {
             </div>
           </AccordionTrigger>
           <AccordionContent className="pb-1 pt-1">
+            {/* Search Input */}
+            <div className="mb-2 px-1">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search tracking items..."
+                  className="h-8 w-full pl-8 text-xs"
+                />
+                {searchTerm && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-2 py-0"
+                    onClick={() => setSearchTerm('')}
+                  >
+                    ×
+                  </Button>
+                )}
+              </div>
+            </div>
+            
             {isLoading ? (
               <div className="flex items-center justify-center py-4">
                 <CircleDashed className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
             ) : activeItems.length === 0 ? (
               <div className="px-2 py-3 text-sm text-muted-foreground">
-                No active tracking items
+                {searchTerm ? "No matching tracking items" : "No active tracking items"}
               </div>
             ) : (
               <div className="space-y-1">
