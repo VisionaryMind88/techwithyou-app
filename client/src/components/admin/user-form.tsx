@@ -55,37 +55,70 @@ type UserFormValues = z.infer<typeof userFormSchema>;
 interface UserFormProps {
   isOpen: boolean;
   onClose: () => void;
+  user?: User;
 }
 
-export function UserForm({ isOpen, onClose }: UserFormProps) {
+export function UserForm({ isOpen, onClose, user }: UserFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isEditMode = !!user;
+
+  // Voor het bewerken van een gebruiker is het wachtwoord optioneel
+  const schema = isEditMode
+    ? userFormSchema.omit({ password: true }).extend({
+        password: z.string().optional(),
+      })
+    : userFormSchema;
 
   const form = useForm<UserFormValues>({
-    resolver: zodResolver(userFormSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
-      email: "",
+      email: user?.email || "",
       password: "",
-      firstName: "",
-      lastName: "",
-      role: "customer",
+      firstName: user?.firstName || "",
+      lastName: user?.lastName || "",
+      role: user?.role || "customer",
     },
   });
 
   const onSubmit = async (values: UserFormValues) => {
     setIsSubmitting(true);
     try {
-      const response = await apiRequest("POST", "/api/auth/register", values);
+      let response;
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create user");
+      if (isEditMode && user) {
+        // Update existing user
+        // Verwijder lege wachtwoord veld indien niet ingevuld
+        const updateData = {...values};
+        if (!updateData.password) {
+          delete updateData.password;
+        }
+        
+        response = await apiRequest("PATCH", `/api/users/${user.id}`, updateData);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to update user");
+        }
+        
+        toast({
+          title: "User updated",
+          description: "The user has been successfully updated",
+        });
+      } else {
+        // Create new user
+        response = await apiRequest("POST", "/api/auth/register", values);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to create user");
+        }
+        
+        toast({
+          title: "User created",
+          description: "The user has been successfully created",
+        });
       }
-      
-      toast({
-        title: "User created",
-        description: "The user has been successfully created",
-      });
 
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["/api/users/admin"] });
@@ -94,10 +127,10 @@ export function UserForm({ isOpen, onClose }: UserFormProps) {
       form.reset();
       onClose();
     } catch (error: any) {
-      console.error("Error creating user:", error);
+      console.error(`Error ${isEditMode ? "updating" : "creating"} user:`, error);
       toast({
         title: "Error",
-        description: error.message || "An error occurred while creating user",
+        description: error.message || `An error occurred while ${isEditMode ? "updating" : "creating"} user`,
         variant: "destructive",
       });
     } finally {
@@ -109,9 +142,12 @@ export function UserForm({ isOpen, onClose }: UserFormProps) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New User</DialogTitle>
+          <DialogTitle>{isEditMode ? "Edit User" : "Add New User"}</DialogTitle>
           <DialogDescription>
-            Create a new user account. Fill out the information below.
+            {isEditMode 
+              ? "Update the user information below." 
+              : "Create a new user account. Fill out the information below."
+            }
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -213,7 +249,7 @@ export function UserForm({ isOpen, onClose }: UserFormProps) {
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create User
+                {isEditMode ? "Update User" : "Create User"}
               </Button>
             </DialogFooter>
           </form>
