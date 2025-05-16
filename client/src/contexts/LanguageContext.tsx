@@ -231,6 +231,20 @@ const translations: Translations = {
     en: 'Send Message',
   },
   
+  // Notifications
+  'notifications.activity': {
+    nl: 'Activiteit',
+    en: 'Activity',
+  },
+  'notifications.message': {
+    nl: 'Bericht',
+    en: 'Message',
+  },
+  'notifications.project': {
+    nl: 'Project',
+    en: 'Project',
+  },
+  
   // Settings
   'settings.title': {
     nl: 'Instellingen',
