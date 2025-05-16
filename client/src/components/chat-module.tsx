@@ -64,39 +64,55 @@ function ChatMessage({ message, currentUserId }: ChatMessageProps) {
           
           {/* File attachments */}
           {message.attachments && Array.isArray(message.attachments) && message.attachments.length > 0 && (
-            <div className="mt-2">
-              {message.attachments.map((file: any, index: number) => (
-                <div 
-                  key={index} 
-                  className={`flex items-center mt-1 ${
-                    isCurrentUser ? "text-white" : "text-gray-800"
-                  }`}
-                >
-                  <svg 
-                    className={`h-4 w-4 mr-1 ${
-                      isCurrentUser ? "text-primary-200" : "text-gray-600"
-                    }`} 
-                    fill="none" 
-                    viewBox="0 0 24 24" 
-                    stroke="currentColor"
+            <div 
+              className="mt-2"
+              role="region"
+              aria-label="File attachments"
+            >
+              <ul className="list-none p-0 m-0">
+                {message.attachments.map((file: any, index: number) => (
+                  <li 
+                    key={index} 
+                    className={`flex items-center mt-1 ${
+                      isCurrentUser ? "text-white" : "text-gray-800"
+                    }`}
                   >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
-                    />
-                  </svg>
-                  <div>
-                    <p className="text-sm">{file.name}</p>
-                    <p className={`text-xs ${
-                      isCurrentUser ? "text-primary-200" : "text-gray-600"
-                    }`}>
-                      {file.size}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                    <svg 
+                      className={`h-4 w-4 mr-1 ${
+                        isCurrentUser ? "text-primary-200" : "text-gray-600"
+                      }`} 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                      aria-hidden="true"
+                      role="img"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
+                      />
+                    </svg>
+                    <div>
+                      <p 
+                        className="text-sm"
+                        aria-label={`File name: ${file.name}`}
+                      >
+                        {file.name}
+                      </p>
+                      <p 
+                        className={`text-xs ${
+                          isCurrentUser ? "text-primary-200" : "text-gray-600"
+                        }`}
+                        aria-label={`File size: ${file.size}`}
+                      >
+                        {file.size}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>
@@ -113,10 +129,13 @@ function ChatMessage({ message, currentUserId }: ChatMessageProps) {
           />
         )}
         
-        <span className={`text-xs text-gray-500 mt-1 ${
-          isCurrentUser ? "text-right block" : ""
-        }`}>
-          {isCurrentUser ? "You" : `${message.sender.firstName}`} • {timestamp}
+        <span 
+          className={`text-xs text-gray-600 mt-1 ${
+            isCurrentUser ? "text-right block" : ""
+          }`}
+          aria-label={`Sent by ${isCurrentUser ? "you" : (message.sender.firstName || message.sender.email)} ${timestamp}`}
+        >
+          {isCurrentUser ? "You" : `${message.sender.firstName || message.sender.email}`} • {timestamp}
         </span>
       </div>
     </div>
@@ -135,11 +154,25 @@ function TimestampDivider({ date }: TimestampDividerProps) {
   if (isToday) label = "Today";
   if (isYesterday) label = "Yesterday";
 
+  // Create a more descriptive date for screen readers
+  const ariaLabel = isToday ? "Today's messages" : 
+                   isYesterday ? "Yesterday's messages" : 
+                   `Messages from ${date.toLocaleDateString(undefined, {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                   })}`;
+
   return (
-    <div className="flex items-center py-2">
-      <Separator className="flex-grow" />
-      <span className="flex-shrink mx-4 text-xs text-gray-400">{label}</span>
-      <Separator className="flex-grow" />
+    <div 
+      className="flex items-center py-2" 
+      role="separator"
+      aria-label={ariaLabel}
+    >
+      <Separator className="flex-grow" aria-hidden="true" />
+      <span className="flex-shrink mx-4 text-xs text-gray-600">{label}</span>
+      <Separator className="flex-grow" aria-hidden="true" />
     </div>
   );
 }
@@ -328,32 +361,53 @@ export function ChatModule({
         
         {/* Message Input */}
         <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
-          <div className="flex items-center">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-gray-500 hover:text-gray-700 p-1 h-auto"
-            >
-              <Paperclip className="h-5 w-5" />
-            </Button>
-            
-            <Input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder="Type a message..."
-              className="flex-1 mx-2"
-            />
-            
-            <Button 
-              size="sm" 
-              onClick={handleSendMessage}
-              disabled={isSubmitting || !newMessage.trim()}
-              className="p-2 h-auto"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSendMessage();
+            }}
+            aria-label="Message input form"
+          >
+            <div className="flex items-center">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-gray-500 hover:text-gray-700 p-1 h-auto"
+                type="button"
+                aria-label="Attach file"
+              >
+                <Paperclip className="h-5 w-5" aria-hidden="true" />
+                <span className="sr-only">Attach file</span>
+              </Button>
+              
+              <Input
+                id="message-input"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={handleKeyPress}
+                placeholder="Type a message..."
+                className="flex-1 mx-2"
+                aria-label="Type a message"
+                required
+                aria-describedby="message-input-hint"
+                name="message"
+              />
+              
+              <Button 
+                size="sm" 
+                type="submit"
+                disabled={isSubmitting || !newMessage.trim()}
+                className="p-2 h-auto"
+                aria-label="Send message"
+              >
+                <Send className="h-4 w-4" aria-hidden="true" />
+                <span className="sr-only">Send</span>
+              </Button>
+            </div>
+            <div id="message-input-hint" className="text-xs text-gray-600 mt-1">
+              Press Enter to send, Shift+Enter for new line
+            </div>
+          </form>
         </div>
       </DialogContent>
     </Dialog>
