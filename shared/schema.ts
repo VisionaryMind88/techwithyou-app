@@ -306,3 +306,58 @@ export const trackingItemsRelations = relations(trackingItems, ({ one }) => ({
 
 export type TrackingItem = typeof trackingItems.$inferSelect;
 export type InsertTrackingItem = z.infer<typeof insertTrackingItemSchema>;
+
+// Help system schemas
+export const helpQuestions = pgTable("help_questions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  question: text("question").notNull(),
+  answer: text("answer"),
+  contextId: varchar("context_id", { length: 100 }),
+  timestamp: timestamp("timestamp").defaultNow(),
+  isResolved: boolean("is_resolved").default(false)
+});
+
+export const insertHelpQuestionSchema = createInsertSchema(helpQuestions).pick({
+  userId: true,
+  question: true,
+  answer: true,
+  contextId: true,
+  timestamp: true
+});
+
+export const helpFeedback = pgTable("help_feedback", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  helpId: integer("help_id").notNull(),
+  rating: integer("rating").notNull(),
+  comment: text("comment"),
+  timestamp: timestamp("timestamp").defaultNow()
+});
+
+export const insertHelpFeedbackSchema = createInsertSchema(helpFeedback).pick({
+  userId: true,
+  helpId: true,
+  rating: true,
+  comment: true,
+  timestamp: true
+});
+
+export const helpQuestionsRelations = relations(helpQuestions, ({ one }) => ({
+  user: one(users, {
+    fields: [helpQuestions.userId],
+    references: [users.id]
+  })
+}));
+
+export const helpFeedbackRelations = relations(helpFeedback, ({ one }) => ({
+  user: one(users, {
+    fields: [helpFeedback.userId],
+    references: [users.id]
+  })
+}));
+
+export type HelpQuestion = typeof helpQuestions.$inferSelect;
+export type InsertHelpQuestion = z.infer<typeof insertHelpQuestionSchema>;
+export type HelpFeedback = typeof helpFeedback.$inferSelect;
+export type InsertHelpFeedback = z.infer<typeof insertHelpFeedbackSchema>;

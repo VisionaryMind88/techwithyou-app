@@ -86,6 +86,13 @@ export interface IStorage {
   updateTrackingItem(id: number, updates: Partial<TrackingItem>): Promise<TrackingItem | undefined>;
   toggleTrackingItemStatus(id: number): Promise<TrackingItem | undefined>;
   deleteTrackingItem(id: number): Promise<boolean>;
+  
+  // Help System
+  getHelpQuestion(id: number): Promise<HelpQuestion | undefined>;
+  getHelpQuestionsByUser(userId: number): Promise<HelpQuestion[]>;
+  logHelpQuestion(question: InsertHelpQuestion): Promise<HelpQuestion>;
+  resolveHelpQuestion(id: number): Promise<HelpQuestion | undefined>;
+  saveHelpFeedback(feedback: InsertHelpFeedback): Promise<HelpFeedback>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -627,6 +634,60 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error deleting user:", error);
       return false;
+    }
+  }
+  
+  // Help System methods
+  async getHelpQuestion(id: number): Promise<HelpQuestion | undefined> {
+    try {
+      const [question] = await db.select().from(helpQuestions).where(eq(helpQuestions.id, id));
+      return question;
+    } catch (error) {
+      console.error("Error getting help question:", error);
+      return undefined;
+    }
+  }
+  
+  async getHelpQuestionsByUser(userId: number): Promise<HelpQuestion[]> {
+    try {
+      return await db.select().from(helpQuestions).where(eq(helpQuestions.userId, userId));
+    } catch (error) {
+      console.error("Error getting help questions by user:", error);
+      return [];
+    }
+  }
+  
+  async logHelpQuestion(question: InsertHelpQuestion): Promise<HelpQuestion> {
+    try {
+      const [newQuestion] = await db.insert(helpQuestions).values(question).returning();
+      return newQuestion;
+    } catch (error) {
+      console.error("Error logging help question:", error);
+      throw error;
+    }
+  }
+  
+  async resolveHelpQuestion(id: number): Promise<HelpQuestion | undefined> {
+    try {
+      const [updatedQuestion] = await db
+        .update(helpQuestions)
+        .set({ isResolved: true })
+        .where(eq(helpQuestions.id, id))
+        .returning();
+      return updatedQuestion;
+    } catch (error) {
+      console.error("Error resolving help question:", error);
+      return undefined;
+    }
+  }
+  
+  async saveHelpFeedback(feedback: InsertHelpFeedback): Promise<HelpFeedback> {
+    try {
+      const [newFeedback] = await db.insert(helpFeedback).values(feedback).returning();
+      return newFeedback;
+    } catch (error) {
+      console.error("Error saving help feedback:", error);
+      throw error;
     }
   }
 }

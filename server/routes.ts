@@ -6,6 +6,7 @@ import { registerAuthRoutes } from "./controllers/auth";
 import { registerProjectRoutes } from "./controllers/projects";
 import { registerMessageRoutes } from "./controllers/messages";
 import { registerTrackingRoutes } from "./controllers/tracking";
+import { registerHelpRoutes } from "./controllers/help";
 import Stripe from "stripe";
 import { storage } from "./storage";
 
