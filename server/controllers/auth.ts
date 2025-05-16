@@ -389,21 +389,15 @@ export function registerAuthRoutes(app: Express) {
     }
   });
   
-  // Update user profile
+  // Update user profile - simplified version to debug
   app.patch("/api/auth/update-profile", async (req: AuthRequest, res: Response) => {
     try {
-      console.log('PATCH /api/auth/update-profile route accessed, session details:', {
-        sessionExists: !!req.session,
-        sessionId: req.sessionID,
-        sessionUserId: req.session?.userId,
-        hasUser: !!req.user
-      });
+      console.log('PATCH /api/auth/update-profile route accessed with body:', req.body);
       
       // Try to get user from session if req.user is not set
       let userId: number;
       
       if (!req.user && req.session?.userId) {
-        console.log(`No req.user but found userId ${req.session.userId} in session, looking up...`);
         const sessionUser = await storage.getUser(req.session.userId);
         if (sessionUser) {
           console.log('Found user via session userId:', sessionUser.email);
@@ -419,59 +413,66 @@ export function registerAuthRoutes(app: Express) {
         return res.status(401).json({ message: 'Authentication required' });
       }
       
-      const { firstName, lastName, email, profilePicture } = req.body;
-      
-      console.log('Updating profile with data:', { firstName, lastName, email, profilePicture });
-      
-      // Check if email is being changed and already exists
-      if (email && req.user && email !== req.user.email) {
-        const existingUser = await storage.getUserByEmail(email);
-        if (existingUser && existingUser.id !== userId) {
-          return res.status(409).json({ message: 'Email already exists' });
-        }
-      }
-      
-      // Prepare update data, only include fields that were provided
-      const updateData: any = {};
-      if (firstName !== undefined) updateData.firstName = firstName;
-      if (lastName !== undefined) updateData.lastName = lastName;
-      if (email !== undefined) updateData.email = email;
-      if (profilePicture !== undefined) updateData.profilePicture = profilePicture;
-      
-      console.log('Filtered update data:', updateData);
-      
+      // Just for debugging, try a direct query to update the user
       try {
-        // Update user in database
-        const updatedUser = await storage.updateUser(userId, updateData);
+        console.log('Attempting direct database update for user ID:', userId);
         
-        if (!updatedUser) {
+        // Simple direct update with minimal fields to test
+        const query = `
+          UPDATE users 
+          SET first_name = $1, last_name = $2
+          WHERE id = $3
+          RETURNING id, email, first_name, last_name, role, profile_picture;
+        `;
+        
+        const { firstName, lastName } = req.body;
+        const values = [firstName || null, lastName || null, userId];
+        
+        console.log('Executing SQL query with values:', values);
+        
+        const { pool } = await import('../db');
+        const result = await pool.query(query, values);
+        
+        if (result.rows.length === 0) {
+          console.log('No user found with ID:', userId);
           return res.status(404).json({ message: 'User not found' });
         }
         
-        console.log('User profile updated successfully:', updatedUser.email);
+        const updatedUser = result.rows[0];
+        console.log('User updated successfully via direct query:', updatedUser);
         
-        // Create activity for profile update
+        // Log successful update
         await storage.createActivity({
           type: 'profile_updated',
           description: 'User updated their profile',
           userId: userId,
           projectId: null,
-          metadata: { updatedFields: Object.keys(updateData) }
+          metadata: { updatedFields: ['firstName', 'lastName'] }
         });
         
-        // Return updated user without password
-        const { password: _, ...userWithoutPassword } = updatedUser;
-        res.json(userWithoutPassword);
-      } catch (updateError: any) {
-        console.error('Error updating user:', updateError);
+        // Return updated user
+        res.json({
+          id: updatedUser.id,
+          email: updatedUser.email,
+          firstName: updatedUser.first_name,
+          lastName: updatedUser.last_name,
+          role: updatedUser.role,
+          profilePicture: updatedUser.profile_picture
+        });
+      } catch (sqlError: any) {
+        console.error('SQL Error updating user:', sqlError);
         res.status(500).json({ 
-          message: 'Failed to update profile', 
-          error: updateError.message 
+          message: 'Database error updating profile', 
+          error: sqlError.message,
+          detail: sqlError.detail || 'No additional details'
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Update profile error:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({ 
+        message: 'Internal server error', 
+        error: error.message
+      });
     }
   });
   
