@@ -4,6 +4,7 @@ import {
   files, 
   messages, 
   activities,
+  payments,
   type User, 
   type InsertUser,
   type Project,
@@ -13,7 +14,9 @@ import {
   type Message,
   type InsertMessage,
   type Activity,
-  type InsertActivity
+  type InsertActivity,
+  type Payment,
+  type InsertPayment
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, isNull, isNotNull } from "drizzle-orm";
