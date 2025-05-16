@@ -101,6 +101,7 @@ function Router() {
         <Route path="/projects/:id" component={ProjectDetail} />
         <Route path="/messages" component={MessagesPage} />
         <Route path="/settings" component={SettingsPage} />
+        <Route path="/users" component={UsersPage} />
         <Route component={NotFound} />
       </Switch>
     );

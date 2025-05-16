@@ -1,0 +1,327 @@
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+import { Sidebar } from "@/components/sidebar";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Menu, Bell, Search, Mail, UserPlus, Filter, MoreHorizontal, Eye, Edit, Trash2 } from "lucide-react";
+import { User } from "@shared/schema";
+import { useAuth } from "@/context/auth-context";
+import { FloatingActionMenu } from "@/components/mobile/floating-action-menu";
+import { BottomNavigation } from "@/components/mobile/bottom-navigation";
+import { MobileHeader } from "@/components/mobile/mobile-header";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+
+export default function UsersPage() {
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterRole, setFilterRole] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [location, setLocation] = useLocation();
+
+  // Redirect if not admin
+  useEffect(() => {
+    if (user && user.role !== "admin") {
+      setLocation("/");
+    }
+  }, [user, setLocation]);
+
+  const {
+    data: users,
+    isLoading,
+    error
+  } = useQuery<User[]>({
+    queryKey: ["/api/users/admin"],
+    enabled: !!user && user.role === "admin"
+  });
+
+  if (error) {
+    toast({
+      title: "Error loading users",
+      description: "There was a problem loading the users. Please try again.",
+      variant: "destructive",
+    });
+  }
+
+  // Filter users based on search and role
+  const filteredUsers = users?.filter(user => {
+    const matchesSearch = searchQuery ? 
+      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user.firstName && user.firstName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (user.lastName && user.lastName.toLowerCase().includes(searchQuery.toLowerCase()))
+      : true;
+    
+    const matchesRole = filterRole ? user.role === filterRole : true;
+    
+    return matchesSearch && matchesRole;
+  });
+
+  const handleViewUser = (userId: number) => {
+    // View user details 
+    toast({
+      title: "View user",
+      description: `Viewing user ${userId}`,
+    });
+  };
+
+  const handleEditUser = (userId: number) => {
+    // Edit user
+    toast({
+      title: "Edit user",
+      description: `Editing user ${userId}`,
+    });
+  };
+
+  const handleDeleteUser = async (userId: number) => {
+    try {
+      await apiRequest("DELETE", `/api/users/${userId}`);
+      queryClient.invalidateQueries({ queryKey: ["/api/users/admin"] });
+      toast({
+        title: "User deleted",
+        description: "The user has been deleted successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error deleting user",
+        description: "There was a problem deleting the user. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Sidebar for desktop */}
+      <Sidebar 
+        isMobile={false} 
+        isOpen={true} 
+        onClose={() => {}} 
+        userRole="admin" 
+      />
+      
+      {/* Mobile Sidebar */}
+      <Sidebar 
+        isMobile={true} 
+        isOpen={isMobileSidebarOpen} 
+        onClose={() => setIsMobileSidebarOpen(false)} 
+        userRole="admin"
+      />
+      
+      <div className="flex-1">
+        {/* Mobile Header */}
+        <MobileHeader 
+          onMenuClick={() => setIsMobileSidebarOpen(true)}
+          title="Users"
+        />
+        
+        {/* Main Content */}
+        <main className="p-4 md:p-6 max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Users</h1>
+              <p className="text-gray-600">Manage all registered users in the system</p>
+            </div>
+            <Button className="mt-3 md:mt-0" onClick={() => toast({ title: "Feature coming soon", description: "User creation will be available soon." })}>
+              <UserPlus size={16} className="mr-2" />
+              Add User
+            </Button>
+          </div>
+          
+          {/* Filters and Search */}
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <Input
+                placeholder="Search users..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Filter size={16} />
+                  {filterRole ? `Role: ${filterRole}` : 'Filter by Role'}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuLabel>Filter by Role</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setFilterRole(null)}>
+                  All Roles
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilterRole("admin")}>
+                  Admin
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilterRole("customer")}>
+                  Customer
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          
+          {/* Users Table */}
+          <Card className="overflow-hidden">
+            {isLoading ? (
+              <div className="p-4 space-y-4">
+                {[...Array(5)].map((_, index) => (
+                  <div key={index} className="flex items-center space-x-4">
+                    <Skeleton className="h-12 w-12 rounded-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-[250px]" />
+                      <Skeleton className="h-4 w-[200px]" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Registration Date</TableHead>
+                      <TableHead>Auth Provider</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers && filteredUsers.length > 0 ? (
+                      filteredUsers.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell className="flex items-center space-x-3">
+                            <div className="flex h-10 w-10 rounded-full bg-gray-200 items-center justify-center text-gray-700 font-semibold uppercase">
+                              {user.firstName ? user.firstName.charAt(0) : user.email.charAt(0)}
+                            </div>
+                            <div>
+                              <div className="font-medium">
+                                {user.firstName && user.lastName 
+                                  ? `${user.firstName} ${user.lastName}` 
+                                  : 'Unnamed User'}
+                              </div>
+                              <div className="text-sm text-gray-500">{user.email}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                              user.role === 'admin' 
+                                ? 'bg-purple-100 text-purple-800' 
+                                : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {user.role}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            {user.createdAt 
+                              ? format(new Date(user.createdAt), 'MMM d, yyyy') 
+                              : 'Unknown date'}
+                          </TableCell>
+                          <TableCell>
+                            {user.provider || 'local'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal size={16} />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleViewUser(user.id)}>
+                                  <Eye size={16} className="mr-2" />
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEditUser(user.id)}>
+                                  <Edit size={16} className="mr-2" />
+                                  Edit User
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeleteUser(user.id)}
+                                  className="text-red-600 focus:text-red-600"
+                                >
+                                  <Trash2 size={16} className="mr-2" />
+                                  Delete User
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-6 text-gray-500">
+                          {searchQuery || filterRole 
+                            ? 'No users match your search criteria' 
+                            : 'No users found in the system'}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </Card>
+        </main>
+      </div>
+      
+      {/* Quick Action Floating Menu */}
+      <FloatingActionMenu 
+        items={[
+          {
+            icon: <UserPlus size={20} />,
+            label: "Add User",
+            onClick: () => {
+              toast({ 
+                title: "Feature coming soon", 
+                description: "User creation will be available soon." 
+              });
+            },
+            color: "bg-blue-500 text-white"
+          },
+          {
+            icon: <Mail size={20} />,
+            label: "Messages",
+            onClick: () => {
+              window.location.href = '/messages';
+            },
+            color: "bg-green-500 text-white"
+          },
+          {
+            icon: <Search size={20} />,
+            label: "Search",
+            onClick: () => {
+              const searchInput = document.querySelector('input[placeholder="Search users..."]') as HTMLInputElement;
+              if (searchInput) {
+                searchInput.focus();
+              }
+            },
+            color: "bg-amber-500 text-white"
+          }
+        ]}
+        position="bottom-right"
+        userRole="admin"
+      />
+      
+      {/* Mobile Bottom Navigation */}
+      <BottomNavigation />
+    </div>
+  );
+}
