@@ -266,6 +266,26 @@ const translations: Translations = {
     nl: 'Statistieken',
     en: 'Statistics',
   },
+  'dashboard.adminTitle': {
+    nl: 'Admin Dashboard',
+    en: 'Admin Dashboard',
+  },
+  'dashboard.analyticsOverview': {
+    nl: 'Analyse Overzicht',
+    en: 'Analytics Overview',
+  },
+  'dashboard.recentProjectRequests': {
+    nl: 'Recente Project Verzoeken',
+    en: 'Recent Project Requests',
+  },
+  'dashboard.customerActivity': {
+    nl: 'Klant Activiteit',
+    en: 'Customer Activity',
+  },
+  'dashboard.advancedAnalytics': {
+    nl: 'Geavanceerde Analyses',
+    en: 'Advanced Analytics',
+  },
   
   // User profile
   'profile.name': {
