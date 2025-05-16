@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -122,9 +123,21 @@ export function LiveTracker({ item, onStatusChange }: TrackingItemProps) {
     }
   };
   
+  const [, navigate] = useLocation();
+
   const handleOpenLink = () => {
     if (item.url) {
-      window.open(item.url, '_blank', 'noopener,noreferrer');
+      // Check if this is an internal link that can be handled within the app
+      const isInternalLink = item.url.startsWith('/') || 
+                            item.url.includes(window.location.hostname);
+      
+      if (isInternalLink) {
+        // For internal links, use the router to navigate
+        navigate(item.url);
+      } else {
+        // For external links, we'll use a controlled window
+        window.open(item.url, 'trackerView', 'width=800,height=600,resizable=yes');
+      }
     }
   };
   
