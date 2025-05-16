@@ -27,6 +27,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Client connections map to track connected users
   const clients = new Map<number, WebSocket>();
   
+  // User Management Routes - Admin Only
+  app.get("/api/users/admin", authMiddleware, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Niet geauthenticeerd" });
+      }
+
+      if (req.user.role !== "admin") {
+        return res.status(403).json({ message: "Verboden: Alleen toegang voor beheerders" });
+      }
+      
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error: any) {
+      console.error("Error getting users:", error);
+      res.status(500).json({ 
+        message: "Fout bij ophalen van gebruikers", 
+        error: error.message 
+      });
+    }
+  });
+
+  // Delete User Route - Admin Only
+  app.delete("/api/users/:id", authMiddleware, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Niet geauthenticeerd" });
+      }
+
+      if (req.user.role !== "admin") {
+        return res.status(403).json({ message: "Verboden: Alleen toegang voor beheerders" });
+      }
+      
+      const userId = parseInt(req.params.id);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Ongeldig gebruikers-ID" });
+      }
+      
+      // Prevent admin from deleting themselves
+      if (userId === req.user.id) {
+        return res.status(400).json({ message: "U kunt uw eigen account niet verwijderen" });
+      }
+      
+      const success = await storage.deleteUser(userId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Gebruiker niet gevonden" });
+      }
+      
+      // Log this action
+      await storage.createActivity({
+        type: "user_deleted",
+        userId: req.user.id,
+        description: `Gebruiker met ID ${userId} is verwijderd`,
+        metadata: { deletedUserId: userId }
+      });
+      
+      res.status(200).json({ message: "Gebruiker succesvol verwijderd" });
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ 
+        message: "Fout bij verwijderen van gebruiker", 
+        error: error.message 
+      });
+    }
+  });
+  
   // Set up a dedicated route for admin payments that comes before all other routes
   app.get("/api/payments/admin", authMiddleware, async (req, res) => {
     try {

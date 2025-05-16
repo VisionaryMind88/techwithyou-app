@@ -155,10 +155,19 @@ export default function UsersPage() {
     }
     
     try {
-      const response = await apiRequest("DELETE", `/api/users/${selectedUser.id}`);
+      console.log(`Verwijderen van gebruiker met ID ${selectedUser.id}`);
+      
+      const response = await fetch(`/api/users/${selectedUser.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error("Server antwoord bij verwijderen:", errorData);
         throw new Error(errorData.message || "Fout bij verwijderen gebruiker");
       }
       
