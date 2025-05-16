@@ -52,12 +52,12 @@ export function Sidebar({ isMobile = false, onClose, userRole }: SidebarProps & 
     >
       {/* Logo and Header */}
       <motion.div 
-        className="h-16 flex items-center px-6 border-b border-blue-500"
+        className="h-20 flex items-center justify-center px-6 border-b border-blue-500"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.1 }}
       >
-        <Logo size="md" textColor="text-white" />
+        <Logo size="lg" textColor="text-white" className="py-2" />
         
         {isMobile && onClose && (
           <motion.button 
