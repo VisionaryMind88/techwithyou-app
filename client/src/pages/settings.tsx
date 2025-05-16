@@ -65,50 +65,72 @@ export default function SettingsPage() {
         profilePicture: profilePicture ? '[PROFILE_PICTURE_DATA]' : null // Log presence but not the actual data
       });
       
-      // First attempt: Only update name fields to simplify
+      // First try to update via API
       const simpleUpdate = {
         firstName,
-        lastName
+        lastName,
+        email
       };
       
-      console.log('Simplified update data:', simpleUpdate);
+      console.log('Update data:', simpleUpdate);
       
       toast({
-        title: "Sending update...",
-        description: "Attempting to update your profile.",
+        title: "Bewaren van wijzigingen...",
+        description: "We werken uw profiel bij.",
       });
       
-      const response = await apiRequest('PATCH', '/api/auth/update-profile', simpleUpdate);
-      
-      console.log('Update response status:', response.status);
-      
-      if (response.ok) {
-        toast({
-          title: "Profile updated",
-          description: "Your profile information has been updated successfully.",
-        });
+      // Always store locally first
+      try {
+        // Save the profile data in localStorage
+        const localUserData = {
+          firstName,
+          lastName,
+          email,
+          profilePicture
+        };
         
-        // Update local user info (stored in localStorage for now)
+        localStorage.setItem('userProfile', JSON.stringify(localUserData));
+        localStorage.setItem('lastProfileUpdate', new Date().toISOString());
+        
         if (profilePicture) {
           localStorage.setItem('profilePicture', profilePicture);
         }
-      } else {
-        let errorMessage = 'Failed to update profile';
-        try {
-          const errorData = await response.json();
-          console.error('Error response:', errorData);
-          errorMessage = errorData.message || errorData.error || errorMessage;
-        } catch (parseError) {
-          console.error('Could not parse error response', parseError);
-        }
         
-        throw new Error(errorMessage);
+        console.log('Profile data stored in local storage');
+      } catch (storageError) {
+        console.error('Failed to store in localStorage:', storageError);
+      }
+      
+      // Then try server update
+      try {
+        const response = await apiRequest('PATCH', '/api/auth/update-profile', simpleUpdate);
+        console.log('Update response status:', response.status);
+        
+        if (response.ok) {
+          toast({
+            title: "Profiel bijgewerkt",
+            description: "Uw profielgegevens zijn succesvol bijgewerkt en opgeslagen.",
+          });
+        } else {
+          // Even if the server update fails, we still have the local storage
+          console.warn('Server update failed, but local storage succeeded');
+          toast({
+            title: "Lokaal opgeslagen",
+            description: "Uw wijzigingen zijn lokaal opgeslagen, maar nog niet gesynchroniseerd met de server.",
+          });
+        }
+      } catch (apiError) {
+        console.error('API request failed, but local storage succeeded:', apiError);
+        toast({
+          title: "Lokaal opgeslagen",
+          description: "Uw wijzigingen zijn lokaal opgeslagen, maar nog niet gesynchroniseerd met de server.",
+        });
       }
     } catch (error: any) {
       console.error('Profile update error:', error);
       toast({
-        title: "Update failed",
-        description: error.message || "Something went wrong. Please try again.",
+        title: "Bijwerken mislukt",
+        description: error.message || "Er is iets misgegaan. Probeer het opnieuw.",
         variant: "destructive",
       });
     }
