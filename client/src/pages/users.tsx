@@ -158,22 +158,27 @@ export default function UsersPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar - Desktop view (always visible) and Mobile view (conditionally visible) */}
-      {isMobileSidebarOpen ? (
-        <Sidebar 
-          isMobile={true} 
-          onClose={() => setIsMobileSidebarOpen(false)} 
-          userRole="admin"
-        />
-      ) : (
-        <Sidebar 
-          isMobile={false} 
-          onClose={() => {}} 
-          userRole="admin" 
-        />
+      {/* Sidebar - Fixed and always visible */}
+      <div className="hidden md:block fixed inset-y-0 left-0 z-50 h-full">
+        <div className="h-full">
+          <Sidebar isMobile={false} onClose={() => {}} userRole="admin" />
+        </div>
+      </div>
+      
+      {/* Sidebar - Mobile */}
+      {isMobileSidebarOpen && (
+        <>
+          <div 
+            className="fixed inset-0 bg-gray-600 bg-opacity-75 z-20"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+          <div className="fixed inset-y-0 left-0 z-30">
+            <Sidebar isMobile={true} onClose={() => setIsMobileSidebarOpen(false)} userRole="admin" />
+          </div>
+        </>
       )}
       
-      <div className="flex-1">
+      <div className="flex-1 md:ml-64">
         {/* Mobile Header */}
         <MobileHeader 
           onMenuClick={() => setIsMobileSidebarOpen(true)}
