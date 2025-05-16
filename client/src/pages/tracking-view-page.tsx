@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ArrowLeft, ExternalLink, RefreshCw } from "lucide-react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PageHeader } from "@/components/page-header";
-import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
 
 export default function TrackingViewPage() {
@@ -42,71 +40,41 @@ export default function TrackingViewPage() {
   const handleBack = () => {
     navigate("/tracking");
   };
-  
-  const handleOpenExternal = () => {
-    if (urlDetails.url) {
-      window.open(urlDetails.url, '_blank', 'noopener,noreferrer');
-    }
-  };
 
   return (
     <div className="flex flex-col min-h-screen">
-      <PageHeader 
-        title={urlDetails.name || t("tracking.externalResource") || "External Resource"}
-        description={urlDetails.url}
-        actions={
-          <div className="flex space-x-2">
-            <Button 
-              variant="outline" 
-              onClick={handleBack}
-              className="flex items-center gap-1"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>{t("common.backToTracking") || "Back to Tracking"}</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleRefresh}
-              className="flex items-center gap-1"
-            >
-              <RefreshCw className="h-4 w-4" />
-              <span>{t("common.refresh") || "Refresh"}</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={handleOpenExternal}
-              className="flex items-center gap-1"
-            >
-              <ExternalLink className="h-4 w-4" />
-              <span>{t("common.openInNewTab") || "Open in New Tab"}</span>
-            </Button>
-          </div>
-        }
-      />
-
-      <div className="flex-1 container mx-auto px-4 py-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
+      <div className="fixed top-4 left-4 z-50">
+        <Button 
+          variant="default" 
+          onClick={handleBack}
+          className="flex items-center gap-1 shadow-md"
+          size="sm"
         >
-          <Card className="w-full overflow-hidden border rounded-lg shadow-sm">
-            <CardContent className="p-0">
-              {isLoading ? (
-                <div className="flex justify-center items-center h-[80vh]">
-                  <RefreshCw className="h-10 w-10 animate-spin text-primary" />
-                </div>
-              ) : (
-                <iframe 
-                  src={urlDetails.url}
-                  className="w-full h-[80vh] border-0"
-                  title={urlDetails.name}
-                  sandbox="allow-scripts allow-same-origin allow-forms"
-                  loading="lazy"
-                />
-              )}
-            </CardContent>
-          </Card>
+          <ArrowLeft className="h-4 w-4" />
+          <span>{t("common.backToTracking") || "Back"}</span>
+        </Button>
+      </div>
+
+      <div className="flex-1 w-full h-screen">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="w-full h-full"
+        >
+          {isLoading ? (
+            <div className="flex justify-center items-center h-screen w-full">
+              <RefreshCw className="h-10 w-10 animate-spin text-primary" />
+            </div>
+          ) : (
+            <iframe 
+              src={urlDetails.url}
+              className="w-full h-screen border-0"
+              title={urlDetails.name}
+              sandbox="allow-scripts allow-same-origin allow-forms"
+              loading="lazy"
+            />
+          )}
         </motion.div>
       </div>
     </div>
