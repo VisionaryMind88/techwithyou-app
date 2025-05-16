@@ -77,7 +77,6 @@ export default function TrackingPage() {
     >
       <PageHeader 
         title={t("tracking.title") || "Live Tracking"} 
-        description={t("tracking.description") || "Monitor and manage real-time tracking items"}
         actions={
           <motion.div 
             className="flex space-x-2"
@@ -91,14 +90,7 @@ export default function TrackingPage() {
               className="flex items-center gap-1"
             >
               <ArrowLeft className="h-4 w-4" />
-              <span>{t("common.backToDashboard") || "Back to Dashboard"}</span>
-            </Button>
-            <Button 
-              onClick={() => setIsTrackingModalOpen(true)}
-              className="flex items-center gap-1"
-            >
-              <Plus className="h-4 w-4" />
-              <span>{t("tracking.addItem") || "Add Item"}</span>
+              <span>{t("common.backToDashboard") || "Go back to Dashboard"}</span>
             </Button>
           </motion.div>
         }
