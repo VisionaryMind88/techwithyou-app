@@ -432,7 +432,7 @@ export function registerAuthRoutes(app: Express) {
       }
       
       // Prepare update data, only include fields that were provided
-      const updateData: Partial<User> = {};
+      const updateData: any = {};
       if (firstName !== undefined) updateData.firstName = firstName;
       if (lastName !== undefined) updateData.lastName = lastName;
       if (email !== undefined) updateData.email = email;
@@ -462,7 +462,7 @@ export function registerAuthRoutes(app: Express) {
         // Return updated user without password
         const { password: _, ...userWithoutPassword } = updatedUser;
         res.json(userWithoutPassword);
-      } catch (updateError) {
+      } catch (updateError: any) {
         console.error('Error updating user:', updateError);
         res.status(500).json({ 
           message: 'Failed to update profile', 

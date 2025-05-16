@@ -363,12 +363,38 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUser(id: number, updates: Partial<User>): Promise<User | undefined> {
-    const [updatedUser] = await db
-      .update(users)
-      .set(updates)
-      .where(eq(users.id, id))
-      .returning();
-    return updatedUser || undefined;
+    try {
+      console.log('Storage: updateUser called with id:', id, 'and updates:', updates);
+      
+      // Create a safe update object that doesn't include any undefined values
+      const safeUpdates: Record<string, any> = {};
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value !== undefined) {
+          safeUpdates[key] = value;
+        }
+      });
+      
+      console.log('Storage: filtered updates:', safeUpdates);
+      
+      // Only proceed if there are actual updates to make
+      if (Object.keys(safeUpdates).length === 0) {
+        console.log('Storage: No valid updates provided, fetching current user');
+        const currentUser = await this.getUser(id);
+        return currentUser;
+      }
+      
+      const [updatedUser] = await db
+        .update(users)
+        .set(safeUpdates)
+        .where(eq(users.id, id))
+        .returning();
+      
+      console.log('Storage: User updated successfully:', updatedUser?.email);
+      return updatedUser || undefined;
+    } catch (error) {
+      console.error('Storage: Error in updateUser:', error);
+      throw error;
+    }
   }
 
   // Projects
