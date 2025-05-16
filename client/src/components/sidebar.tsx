@@ -1,8 +1,9 @@
-import { Home, FolderOpen, MessageSquare, Settings, LogOut, X, Users } from "lucide-react";
+import { Home, FolderOpen, MessageSquare, Settings, LogOut, X, Users, Activity } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { Logo } from "@/components/logo";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { LiveTrackingSidebar } from "./sidebar/live-tracking-sidebar";
 
 interface SidebarProps {
   isMobile?: boolean;
@@ -125,6 +126,13 @@ export function Sidebar({ isMobile = false, onClose, userRole }: SidebarProps & 
               </Link>
             </li>
           )}
+          
+          {/* Live Tracking Section */}
+          <li className="mt-4">
+            <div className="px-2">
+              <LiveTrackingSidebar />
+            </div>
+          </li>
         </ul>
       </nav>
       
