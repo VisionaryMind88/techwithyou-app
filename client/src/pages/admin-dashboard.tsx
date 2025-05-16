@@ -43,6 +43,7 @@ export default function AdminDashboard() {
   const [showTour, setShowTour] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   // Check if onboarding tour should be shown
   useEffect(() => {

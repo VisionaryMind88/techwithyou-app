@@ -99,8 +99,19 @@ export default function MessagesPage() {
         isRead: false
       };
       
-      const response = await apiRequest('POST', '/api/messages', messageData);
-      const responseData = await response.json();
+      // Using fetch directly with credentials to ensure session cookies are sent
+      const response = await fetch('/api/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(messageData),
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error sending message: ${response.statusText}`);
+      }
       
       // Invalidate queries to refresh the messages
       queryClient.invalidateQueries({ queryKey: ['/api/messages/recent'] });
