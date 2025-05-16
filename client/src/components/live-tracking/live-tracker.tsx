@@ -178,7 +178,7 @@ export function LiveTracker({ item, onStatusChange }: TrackingItemProps) {
           <CardContent>
             <p className="text-sm text-gray-700 mb-3">{item.description || t("tracking.noDescription") || "No description provided"}</p>
             
-            {item.url && (
+            {item.url && isAdmin && (
               <div className="flex items-center text-sm text-blue-600">
                 <Globe className="h-3.5 w-3.5 mr-1" />
                 <span className="truncate">{item.url}</span>

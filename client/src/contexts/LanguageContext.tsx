@@ -194,6 +194,38 @@ const translations: Translations = {
     nl: 'Nieuw Bericht',
     en: 'New Message',
   },
+  'messages.about': {
+    nl: 'Over',
+    en: 'About',
+  },
+  'messages.toAdmin': {
+    nl: 'Uw bericht wordt verzonden naar het admin team',
+    en: 'Your message will be sent to the admin team',
+  },
+  'messages.typeMessage': {
+    nl: 'Typ hier uw bericht...',
+    en: 'Type your message here...',
+  },
+  'messages.sending': {
+    nl: 'Verzenden...',
+    en: 'Sending...',
+  },
+  'messages.sentSuccessfully': {
+    nl: 'Bericht succesvol verzonden',
+    en: 'Message sent successfully',
+  },
+  'messages.adminNotified': {
+    nl: 'Een beheerder zal binnenkort op uw bericht reageren.',
+    en: 'An administrator will respond to your message soon.',
+  },
+  'messages.error': {
+    nl: 'Fout',
+    en: 'Error',
+  },
+  'messages.sendError': {
+    nl: 'Bericht verzenden mislukt. Probeer het opnieuw.',
+    en: 'Failed to send message. Please try again.',
+  },
   
   // Settings
   'settings.title': {
