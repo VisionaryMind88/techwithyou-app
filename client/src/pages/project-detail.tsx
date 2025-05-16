@@ -542,7 +542,7 @@ export default function ProjectDetail() {
               </div>
 
               {/* Activity Timeline */}
-              <div>
+              <div id="activity-section">
                 <Card>
                   <CardHeader>
                     <CardTitle>Recent Activity</CardTitle>
