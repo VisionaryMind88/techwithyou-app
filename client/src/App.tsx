@@ -87,8 +87,17 @@ function Router() {
     );
   }
 
-  // User is authenticated at this point
+  // Debug user role
+  console.log("User authenticated with role:", user?.role);
+  
+  // User is authenticated at this point - handle customer role
   if (user?.role === "customer") {
+    console.log("Rendering customer routes");
+    
+    if (location === '/') {
+      return <CustomerDashboard />;
+    }
+    
     return (
       <Switch>
         <Route path="/projects/:id" component={ProjectDetail} />
@@ -105,7 +114,14 @@ function Router() {
     );
   }
   
+  // Handle admin role
   if (user?.role === "admin") {
+    console.log("Rendering admin routes");
+    
+    if (location === '/') {
+      return <AdminDashboard />;
+    }
+    
     return (
       <Switch>
         <Route path="/projects/:id" component={ProjectDetail} />
