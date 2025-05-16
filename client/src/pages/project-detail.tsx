@@ -298,7 +298,7 @@ export default function ProjectDetail() {
         )}
 
         {/* Main Content */}
-        <main className="flex-1 md:ml-64">
+        <main className="flex-1 md:ml-64" id="main-content">
           {/* Top Navigation */}
           <header className="bg-white shadow-sm z-10">
             <div className="flex items-center justify-between h-16 px-4 md:px-6">

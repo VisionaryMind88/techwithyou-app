@@ -1,5 +1,16 @@
 /* Accessibility CSS */
 
+/* Skip links container */
+.skip-links {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 /* Skip to content link - hidden by default, visible on focus */
 .skip-to-content {
   position: absolute;
@@ -7,16 +18,31 @@
   left: 0;
   background: #0044ff;
   color: white;
-  padding: 8px;
+  padding: 12px 16px;
   z-index: 9999;
   font-weight: bold;
   transition: top 0.2s ease;
+  text-decoration: none;
+  border-radius: 0 0 4px 0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .skip-to-content:focus {
   top: 0;
   outline: 2px solid white;
   outline-offset: 2px;
+}
+
+/* Enhanced skip link for high contrast mode */
+.high-contrast .skip-to-content {
+  background: #000000;
+  color: #ffff00;
+  border: 2px solid #ffff00;
+}
+
+.high-contrast .skip-to-content:focus {
+  outline: 3px solid #ffff00;
+  outline-offset: 3px;
 }
 
 /* High contrast mode */

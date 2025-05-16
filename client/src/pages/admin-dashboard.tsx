@@ -384,7 +384,7 @@ export default function AdminDashboard() {
           {/* Page Content */}
           <div className="px-4 py-6 md:px-6 pb-16">
             {/* Analytics Overview */}
-            <div className="mb-6" id="analytics-section">
+            <div className="mb-6" id="stats-section">
               <h2 className="text-xl font-semibold text-gray-800 mb-4" id="admin-dashboard-welcome">Analytics Overview</h2>
               <AdminDashboardStats 
                 stats={stats} 
@@ -411,7 +411,7 @@ export default function AdminDashboard() {
             {/* Customer Activity & Messages */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               {/* Customer Activity */}
-              <div id="customers-section">
+              <div id="activity-section">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-semibold text-gray-800">Customer Activity</h2>
                   <Button variant="link" className="text-primary-600 p-0 h-auto">View All</Button>

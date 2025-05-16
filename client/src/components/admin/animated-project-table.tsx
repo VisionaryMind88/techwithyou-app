@@ -204,6 +204,7 @@ export function ProjectTable({
       transition={{ duration: 0.5 }}
       role="region"
       aria-label="Projects table"
+      id="projects-table"
     >
       <div className="overflow-x-auto">
         <Table aria-label="Projects">
