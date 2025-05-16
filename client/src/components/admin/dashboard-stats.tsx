@@ -149,11 +149,23 @@ export function AdminDashboardStats({ stats, isLoading = false }: AdminDashboard
                   stiffness: 300
                 }}
               >
-                {stat.value}
+                <motion.span
+                  key={stat.value}
+                  initial={{ scale: 1.2, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.8, opacity: 0 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 500,
+                    damping: 15
+                  }}
+                >
+                  {stat.value}
+                </motion.span>
               </motion.p>
             </div>
             <motion.div 
-              className={`p-3 rounded-full ${stat.bgColor} ${stat.color} relative z-10`}
+              className={`p-3 rounded-full ${stat.bgColor} ${stat.color} relative z-10 overflow-hidden`}
               whileHover={{ 
                 scale: 1.15,
                 rotate: 10,
@@ -169,7 +181,11 @@ export function AdminDashboardStats({ stats, isLoading = false }: AdminDashboard
               transition={{ delay: 0.3 + index * 0.1 }}
             >
               <motion.div
-                animate={{ rotate: [0, 5, 0, -5, 0] }}
+                className="relative"
+                animate={{ 
+                  rotate: [0, 5, 0, -5, 0],
+                  scale: [1, 1.1, 1, 0.95, 1] 
+                }}
                 transition={{ 
                   duration: 5,
                   repeat: Infinity,
@@ -177,7 +193,19 @@ export function AdminDashboardStats({ stats, isLoading = false }: AdminDashboard
                   ease: "easeInOut"
                 }}
               >
-                <stat.icon className="text-xl" />
+                <stat.icon className="text-xl relative z-10" />
+                <motion.div 
+                  className={`absolute inset-0 bg-${stat.color.split('-')[1]}-400 opacity-20 rounded-full blur-md`}
+                  animate={{ 
+                    scale: [1, 1.4, 1],
+                    opacity: [0.2, 0.3, 0.2] 
+                  }}
+                  transition={{ 
+                    duration: 3,
+                    repeat: Infinity,
+                    repeatType: "reverse"
+                  }}
+                />
               </motion.div>
             </motion.div>
           </div>
@@ -196,6 +224,7 @@ export function AdminDashboardStats({ stats, isLoading = false }: AdminDashboard
                 transition: { duration: 0.2 }
               }}>
               <motion.div
+                className="relative"
                 animate={{ 
                   y: [0, stat.change.isPositive ? -3 : 3, 0],
                 }}
@@ -206,16 +235,43 @@ export function AdminDashboardStats({ stats, isLoading = false }: AdminDashboard
                   repeatDelay: 2
                 }}
               >
+                <motion.div 
+                  className={`absolute inset-0 ${
+                    stat.change.isPositive ? "bg-green-400" : "bg-red-400"
+                  } opacity-25 rounded-full -m-1 blur-sm`}
+                  animate={{ 
+                    scale: [1, 1.5, 1],
+                    opacity: [0.2, 0.4, 0.2] 
+                  }}
+                  transition={{ 
+                    duration: 2,
+                    repeat: Infinity
+                  }}
+                />
                 <ArrowUp
-                  className={`h-3 w-3 mr-1 ${
+                  className={`h-3 w-3 mr-1 relative z-10 ${
                     !stat.change.isPositive ? "rotate-180" : ""
                   }`}
                 />
               </motion.div>
               <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 + index * 0.1 }}
+                key={stat.change.value}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ 
+                  opacity: 1, 
+                  scale: 1,
+                  color: stat.change.isPositive 
+                    ? ['#16a34a', '#22c55e', '#16a34a']  // green variations
+                    : ['#dc2626', '#ef4444', '#dc2626']  // red variations
+                }}
+                transition={{ 
+                  delay: 0.5 + index * 0.1,
+                  color: { 
+                    repeat: Infinity,
+                    duration: 3,
+                    repeatType: "reverse"
+                  }
+                }}
               >
                 {stat.change.value}%
               </motion.span>
