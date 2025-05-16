@@ -112,7 +112,13 @@ export function ProjectTable({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+    <motion.div 
+      className="bg-white rounded-lg shadow-sm overflow-hidden"
+      variants={fadeIn}
+      initial="hidden"
+      animate="visible"
+      transition={{ duration: 0.5 }}
+    >
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -126,99 +132,182 @@ export function ProjectTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {projects.map((project) => {
-              const statusStyle = getStatusStyle(project.status);
-              
-              return (
-                <TableRow key={project.id}>
-                  <TableCell className="font-medium">{project.name}</TableCell>
-                  
-                  <TableCell>
-                    <div className="flex items-center">
-                      <Avatar className="h-8 w-8 mr-3">
-                        <AvatarFallback>
-                          {project.user.firstName?.[0] || project.user.email?.[0] || '?'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium">
-                          {project.user.firstName} {project.user.lastName}
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              animate="visible"
+              className="contents"
+            >
+              {projects.map((project, index) => {
+                const statusStyle = getStatusStyle(project.status);
+                
+                return (
+                  <motion.tr
+                    key={project.id}
+                    variants={staggerItem}
+                    className="contents"
+                    whileHover={{ 
+                      backgroundColor: "rgba(0, 0, 0, 0.02)",
+                      transition: { duration: 0.1 }
+                    }}
+                    custom={index}
+                  >
+                    <TableRow>
+                      <TableCell className="font-medium">
+                        <motion.span
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.1 + index * 0.05 }}
+                        >
+                          {project.name}
+                        </motion.span>
+                      </TableCell>
+                      
+                      <TableCell>
+                        <div className="flex items-center">
+                          <motion.div
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: 0.2 + index * 0.05 }}
+                          >
+                            <Avatar className="h-8 w-8 mr-3">
+                              <AvatarFallback>
+                                {project.user.firstName?.[0] || project.user.email?.[0] || '?'}
+                              </AvatarFallback>
+                            </Avatar>
+                          </motion.div>
+                          <div>
+                            <motion.div 
+                              className="font-medium"
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: 0.3 + index * 0.05 }}
+                            >
+                              {project.user.firstName} {project.user.lastName}
+                            </motion.div>
+                            <motion.div 
+                              className="text-sm text-gray-500"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ delay: 0.4 + index * 0.05 }}
+                            >
+                              {project.user.email}
+                            </motion.div>
+                          </div>
                         </div>
-                        <div className="text-sm text-gray-500">{project.user.email}</div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  
-                  <TableCell>{project.type}</TableCell>
-                  
-                  <TableCell>
-                    <Badge 
-                      variant="outline" 
-                      className={`${statusStyle.color} ${statusStyle.bg} border-0`}
-                    >
-                      {statusStyle.label}
-                    </Badge>
-                  </TableCell>
-                  
-                  <TableCell>
-                    {project.createdAt ? format(new Date(project.createdAt), "MMM d, yyyy") : "N/A"}
-                  </TableCell>
-                  
-                  <TableCell className="text-right">
-                    {project.status === "pending_approval" ? (
-                      <div className="flex justify-end space-x-2">
-                        <Button
-                          size="sm"
-                          variant="link"
-                          className="text-primary-600 hover:text-primary-900"
-                          onClick={() => onReview?.(project.id)}
+                      </TableCell>
+                      
+                      <TableCell>
+                        <motion.span
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.2 + index * 0.05 }}
                         >
-                          Review
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="link"
-                          className="text-success hover:text-green-900"
-                          onClick={() => onApprove?.(project.id)}
+                          {project.type}
+                        </motion.span>
+                      </TableCell>
+                      
+                      <TableCell>
+                        <motion.div
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ 
+                            delay: 0.3 + index * 0.05,
+                            type: "spring",
+                            stiffness: 300
+                          }}
                         >
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="link"
-                          className="text-destructive hover:text-red-900"
-                          onClick={() => onReject?.(project.id)}
+                          <Badge 
+                            variant="outline" 
+                            className={`${statusStyle.color} ${statusStyle.bg} border-0`}
+                          >
+                            {statusStyle.label}
+                          </Badge>
+                        </motion.div>
+                      </TableCell>
+                      
+                      <TableCell>
+                        <motion.span
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.2 + index * 0.05 }}
                         >
-                          Reject
-                        </Button>
-                      </div>
-                    ) : (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onView?.(project.id)}>
-                            View
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onEdit?.(project.id)}>
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onDelete?.(project.id)}>
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+                          {project.createdAt ? format(new Date(project.createdAt), "MMM d, yyyy") : "N/A"}
+                        </motion.span>
+                      </TableCell>
+                      
+                      <TableCell className="text-right">
+                        {project.status === "pending_approval" ? (
+                          <motion.div 
+                            className="flex justify-end space-x-2"
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.4 + index * 0.05 }}
+                          >
+                            <Button
+                              size="sm"
+                              variant="link"
+                              className="text-primary-600 hover:text-primary-900"
+                              onClick={() => onReview?.(project.id)}
+                            >
+                              Review
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="link"
+                              className="text-success hover:text-green-900"
+                              onClick={() => onApprove?.(project.id)}
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="link"
+                              className="text-destructive hover:text-red-900"
+                              onClick={() => onReject?.(project.id)}
+                            >
+                              Reject
+                            </Button>
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.4 + index * 0.05 }}
+                          >
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  className="transition-transform duration-200 hover:scale-110"
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => onView?.(project.id)}>
+                                  View
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => onEdit?.(project.id)}>
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => onDelete?.(project.id)}>
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </motion.div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  </motion.tr>
+                );
+              })}
+            </motion.div>
           </TableBody>
         </Table>
       </div>
-    </div>
+    </motion.div>
   );
 }
