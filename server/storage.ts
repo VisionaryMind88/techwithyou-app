@@ -16,7 +16,8 @@ import {
   type InsertActivity
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, isNull, isNotNull } from "drizzle-orm";
+import { eq, and, or, desc, isNull, isNotNull } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
 // Storage interface
 export interface IStorage {
@@ -136,12 +137,104 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFilesByProject(projectId: number): Promise<File[]> {
-    return await db.select().from(files).where(eq(files.projectId, projectId));
+    // Only return the latest versions of files by default
+    return await db.select().from(files)
+      .where(and(
+        eq(files.projectId, projectId),
+        eq(files.isLatestVersion, true)
+      ));
   }
 
   async createFile(file: InsertFile): Promise<File> {
-    const [newFile] = await db.insert(files).values(file).returning();
+    const [newFile] = await db.insert(files).values({
+      ...file,
+      versionNumber: 1,
+      isLatestVersion: true
+    }).returning();
     return newFile;
+  }
+  
+  async getFileVersions(fileId: number): Promise<File[]> {
+    // Get the root file (the original upload)
+    const rootFile = await this.getFile(fileId);
+    if (!rootFile) return [];
+    
+    // If this is a version, get its parent
+    const parentId = rootFile.parentFileId || rootFile.id;
+    
+    // Get all versions of this file (including the original)
+    return await db.select().from(files).where(
+      or(
+        eq(files.id, parentId),
+        eq(files.parentFileId, parentId)
+      )
+    ).orderBy(desc(files.versionNumber));
+  }
+  
+  async createFileVersion(file: InsertFile, parentFileId: number, versionNote?: string): Promise<File> {
+    // Get the parent file
+    const parentFile = await this.getFile(parentFileId);
+    if (!parentFile) {
+      throw new Error("Parent file not found");
+    }
+    
+    // Get the root file ID (might be parent or parent's parent)
+    const rootFileId = parentFile.parentFileId || parentFile.id;
+    
+    // Get the highest version number
+    const [highestVersion] = await db.select({ 
+      maxVersion: max(files.versionNumber) 
+    }).from(files).where(
+      or(
+        eq(files.id, rootFileId),
+        eq(files.parentFileId, rootFileId)
+      )
+    );
+    
+    const nextVersion = (highestVersion?.maxVersion || 0) + 1;
+    
+    // Mark all existing versions as not latest
+    await db.update(files)
+      .set({ isLatestVersion: false })
+      .where(
+        or(
+          eq(files.id, rootFileId),
+          eq(files.parentFileId, rootFileId)
+        )
+      );
+    
+    // Create the new version
+    const [newVersion] = await db.insert(files).values({
+      ...file,
+      parentFileId: rootFileId,
+      versionNumber: nextVersion,
+      isLatestVersion: true,
+      versionNote: versionNote || `Version ${nextVersion}`
+    }).returning();
+    
+    return newVersion;
+  }
+  
+  async getLatestFileVersion(fileId: number): Promise<File | undefined> {
+    // Get the root file (the original upload)
+    const rootFile = await this.getFile(fileId);
+    if (!rootFile) return undefined;
+    
+    // If this is a version, get its parent
+    const parentId = rootFile.parentFileId || rootFile.id;
+    
+    // Get the latest version
+    const [latestVersion] = await db.select().from(files).where(
+      and(
+        or(
+          eq(files.id, parentId),
+          eq(files.parentFileId, parentId)
+        ),
+        eq(files.isLatestVersion, true)
+      )
+    );
+    
+    return latestVersion;
   }
 
   // Messages

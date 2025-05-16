@@ -309,4 +309,165 @@ export function registerProjectRoutes(app: Express) {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
+  
+  // Get all versions of a file
+  app.get("/api/files/:id/versions", async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
+      const fileId = parseInt(req.params.id);
+      
+      if (isNaN(fileId)) {
+        return res.status(400).json({ message: 'Invalid file ID' });
+      }
+      
+      const file = await storage.getFile(fileId);
+      
+      if (!file) {
+        return res.status(404).json({ message: 'File not found' });
+      }
+      
+      // Check if user has access to this file's project
+      const project = await storage.getProject(file.projectId);
+      
+      if (!project) {
+        return res.status(404).json({ message: 'Project not found' });
+      }
+      
+      if (req.user.role !== 'admin' && project.userId !== req.user.id) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      
+      // Get all versions of this file
+      const versions = await storage.getFileVersions(fileId);
+      
+      res.json(versions);
+    } catch (error) {
+      console.error('Get file versions error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
+  // Upload a new version of a file
+  app.post("/api/files/:id/versions", fileUploadMiddleware, handleFileUploadErrors, async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
+      const fileId = parseInt(req.params.id);
+      
+      if (isNaN(fileId)) {
+        return res.status(400).json({ message: 'Invalid file ID' });
+      }
+      
+      const { versionNote } = req.body;
+      
+      const file = await storage.getFile(fileId);
+      
+      if (!file) {
+        return res.status(404).json({ message: 'File not found' });
+      }
+      
+      // Check if user has access to this file's project
+      const project = await storage.getProject(file.projectId);
+      
+      if (!project) {
+        return res.status(404).json({ message: 'Project not found' });
+      }
+      
+      if (req.user.role !== 'admin' && project.userId !== req.user.id) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      
+      if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+        return res.status(400).json({ message: 'No files uploaded' });
+      }
+      
+      // We only accept one file for version upload
+      const uploadedFile = req.files[0];
+      
+      // Create new version in database
+      const newVersion = await storage.createFileVersion(
+        {
+          filename: uploadedFile.filename,
+          originalName: uploadedFile.originalname,
+          mimeType: uploadedFile.mimetype,
+          size: uploadedFile.size,
+          path: uploadedFile.path,
+          projectId: file.projectId,
+          userId: req.user.id
+        }, 
+        fileId,
+        versionNote
+      );
+      
+      // Create activity record for the version upload
+      await storage.createActivity({
+        type: "file_version",
+        description: `New version uploaded for ${file.originalName}`,
+        projectId: file.projectId,
+        userId: req.user.id,
+        referenceId: newVersion.id,
+        referenceType: "file",
+        isRead: false,
+        metadata: {
+          versionNote: versionNote || `Version ${newVersion.versionNumber}`,
+          versionNumber: newVersion.versionNumber,
+          fileName: file.originalName
+        }
+      });
+      
+      res.status(201).json(newVersion);
+    } catch (error) {
+      console.error('Create file version error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
+  // Get the latest version of a file
+  app.get("/api/files/:id/latest", async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
+      const fileId = parseInt(req.params.id);
+      
+      if (isNaN(fileId)) {
+        return res.status(400).json({ message: 'Invalid file ID' });
+      }
+      
+      const file = await storage.getFile(fileId);
+      
+      if (!file) {
+        return res.status(404).json({ message: 'File not found' });
+      }
+      
+      // Check if user has access to this file's project
+      const project = await storage.getProject(file.projectId);
+      
+      if (!project) {
+        return res.status(404).json({ message: 'Project not found' });
+      }
+      
+      if (req.user.role !== 'admin' && project.userId !== req.user.id) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+      
+      // Get the latest version
+      const latestVersion = await storage.getLatestFileVersion(fileId);
+      
+      if (!latestVersion) {
+        return res.status(404).json({ message: 'Latest version not found' });
+      }
+      
+      res.json(latestVersion);
+    } catch (error) {
+      console.error('Get latest file version error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
 }
