@@ -14,6 +14,7 @@ import ProjectsPage from "@/pages/projects";
 import MessagesPage from "@/pages/messages";
 import SettingsPage from "@/pages/settings";
 import UsersPage from "@/pages/users";
+import PaymentSuccessPage from "@/pages/payment-success";
 import { useAuth, AuthProvider } from "./context/auth-context";
 import { ThemeProvider } from "next-themes";
 import { handleAuthRedirect } from "./lib/firebase";
@@ -89,6 +90,7 @@ function Router() {
         <Route path="/projects/:id" component={ProjectDetail} />
         <Route path="/messages" component={MessagesPage} />
         <Route path="/settings" component={SettingsPage} />
+        <Route path="/payment-success" component={PaymentSuccessPage} />
         <Route component={NotFound} />
       </Switch>
     );
@@ -103,6 +105,7 @@ function Router() {
         <Route path="/messages" component={MessagesPage} />
         <Route path="/settings" component={SettingsPage} />
         <Route path="/users" component={UsersPage} />
+        <Route path="/payment-success" component={PaymentSuccessPage} />
         <Route component={NotFound} />
       </Switch>
     );

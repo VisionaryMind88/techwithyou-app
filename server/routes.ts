@@ -123,6 +123,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
     
+    // Endpoint to verify payment after Stripe redirect
+    app.get("/api/payment-verify", async (req, res) => {
+      try {
+        const { payment_intent } = req.query;
+        
+        if (!payment_intent || typeof payment_intent !== 'string') {
+          return res.status(400).json({ 
+            success: false,
+            message: "Missing payment intent ID" 
+          });
+        }
+        
+        // Verify the payment intent with Stripe
+        const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent);
+        
+        if (!paymentIntent || paymentIntent.status !== 'succeeded') {
+          return res.status(400).json({
+            success: false,
+            message: "Payment verification failed"
+          });
+        }
+        
+        // Find the payment in our database
+        const payments = await storage.getAllPayments();
+        const payment = payments.find(p => p.stripePaymentIntentId === payment_intent);
+        
+        if (!payment) {
+          return res.status(404).json({
+            success: false,
+            message: "Payment record not found"
+          });
+        }
+        
+        // Update payment status if needed
+        if (payment.status !== 'completed') {
+          await storage.updatePaymentStatus(payment.id, 'completed');
+          
+          // Create activity record
+          await storage.createActivity({
+            type: "payment",
+            description: `Payment of $${payment.amount} has been completed`,
+            projectId: payment.projectId,
+            userId: payment.userId,
+            referenceId: payment.id,
+            referenceType: "payment",
+            isRead: false
+          });
+        }
+        
+        res.json({
+          success: true,
+          payment: {
+            ...payment,
+            status: 'completed'
+          }
+        });
+      } catch (error: any) {
+        console.error("Error verifying payment:", error);
+        res.status(500).json({
+          success: false,
+          message: "Error verifying payment: " + error.message
+        });
+      }
+    });
+    
     // Endpoint to get payment status
     app.get("/api/payments/:id", authMiddleware, async (req, res) => {
       try {
