@@ -1,351 +1,606 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Upload, Globe, Eye } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue, 
+} from "@/components/ui/select";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { 
+  Globe, 
+  Activity,
+  Plus,
+  Pencil,
+  Trash2,
+  ExternalLink,
+  CircleDashed
+} from "lucide-react";
 
-type TrackingItem = {
+interface TrackingItem {
   id: number;
   name: string;
+  type: string;
   url: string;
-  type: "app" | "website";
-  key?: string;
-  createdAt: Date | null;
-  updatedAt: Date | null;
-  createdById: number;
+  description: string | null;
   isActive: boolean;
-  description?: string;
-  thumbnailUrl?: string;
-};
+  createdAt: string;
+}
+
+interface TrackingItemFormData {
+  name: string;
+  type: string;
+  url: string;
+  description: string;
+  isActive: boolean;
+}
 
 export function LiveTracker() {
-  const [url, setUrl] = useState("");
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [type, setType] = useState<"app" | "website">("website");
-  const [key, setKey] = useState("");
-  const [isAddingNew, setIsAddingNew] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<TrackingItem | null>(null);
-  
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
   const { user, isAuthenticated } = useAuth();
-  
-  // Fetch tracking items
-  const { data: trackingData, isLoading: isLoadingTrackingItems } = useQuery({
-    queryKey: ["/api/tracking"],
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("all");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [deleteItemId, setDeleteItemId] = useState<number | null>(null);
+  const [formData, setFormData] = useState<TrackingItemFormData>({
+    name: "",
+    type: "website",
+    url: "",
+    description: "",
+    isActive: true
   });
+  const [editItemId, setEditItemId] = useState<number | null>(null);
+
+  // Fetch tracking items
+  const { data, isLoading: isFetching, refetch } = useQuery({
+    queryKey: ["/api/tracking"],
+    enabled: isAuthenticated,
+  });
+
+  const trackingItems: TrackingItem[] = data?.trackingItems || [];
   
-  // Add tracking item mutation
-  const addTrackingItemMutation = useMutation({
-    mutationFn: async (trackingItem: Omit<TrackingItem, "id" | "createdAt" | "updatedAt" | "createdById" | "isActive">) => {
-      return await apiRequest("POST", "/api/tracking", trackingItem);
+  // Filtered items based on active tab
+  const filteredItems = activeTab === "all" 
+    ? trackingItems 
+    : activeTab === "active" 
+      ? trackingItems.filter(item => item.isActive)
+      : trackingItems.filter(item => !item.isActive);
+
+  // Create tracking item mutation
+  const createMutation = useMutation({
+    mutationFn: async (data: TrackingItemFormData) => {
+      return await apiRequest("POST", "/api/tracking", data);
     },
     onSuccess: () => {
-      toast({
-        title: "Tracking item added",
-        description: "The tracking item has been added successfully.",
-      });
-      setIsAddingNew(false);
-      resetForm();
       queryClient.invalidateQueries({ queryKey: ["/api/tracking"] });
+      toast({
+        title: "Success",
+        description: "Tracking item created successfully.",
+      });
+      setFormData({
+        name: "",
+        type: "website",
+        url: "",
+        description: "",
+        isActive: true
+      });
+      setIsCreateDialogOpen(false);
     },
     onError: (error: any) => {
       toast({
-        title: "Error adding tracking item",
-        description: error.message || "There was an error adding the tracking item.",
+        title: "Error",
+        description: error.message || "Failed to create tracking item.",
         variant: "destructive",
       });
-    }
+    },
   });
-  
+
+  // Update tracking item mutation
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: TrackingItemFormData }) => {
+      return await apiRequest("PATCH", `/api/tracking/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tracking"] });
+      toast({
+        title: "Success",
+        description: "Tracking item updated successfully.",
+      });
+      setIsEditDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update tracking item.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete tracking item mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("DELETE", `/api/tracking/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tracking"] });
+      toast({
+        title: "Success",
+        description: "Tracking item deleted successfully.",
+      });
+      setDeleteItemId(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete tracking item.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Toggle tracking item status mutation
   const toggleStatusMutation = useMutation({
     mutationFn: async (id: number) => {
       return await apiRequest("PATCH", `/api/tracking/${id}/toggle`);
     },
     onSuccess: () => {
-      toast({
-        title: "Status updated",
-        description: "The tracking item status has been updated.",
-      });
       queryClient.invalidateQueries({ queryKey: ["/api/tracking"] });
     },
     onError: (error: any) => {
       toast({
-        title: "Error updating status",
-        description: error.message || "There was an error updating the status.",
+        title: "Error",
+        description: error.message || "Failed to toggle status.",
         variant: "destructive",
       });
-    }
-  });
-  
-  // Delete tracking item mutation
-  const deleteTrackingItemMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return await apiRequest("DELETE", `/api/tracking/${id}`);
     },
-    onSuccess: () => {
-      toast({
-        title: "Tracking item deleted",
-        description: "The tracking item has been deleted successfully.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/tracking"] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error deleting tracking item",
-        description: error.message || "There was an error deleting the tracking item.",
-        variant: "destructive",
-      });
-    }
   });
-  
-  const resetForm = () => {
-    setUrl("");
-    setName("");
-    setDescription("");
-    setType("website");
-    setKey("");
+
+  // Handle form input changes
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
-  
-  const handleSubmit = (e: React.FormEvent) => {
+
+  // Handle select changes
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Handle switch changes
+  const handleSwitchChange = (name: string, checked: boolean) => {
+    setFormData(prev => ({ ...prev, [name]: checked }));
+  };
+
+  // Handle create form submission
+  const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!name || !url) {
-      toast({
-        title: "Missing information",
-        description: "Please provide a name and URL for the tracking item.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    addTrackingItemMutation.mutate({
-      name,
-      url,
-      type,
-      description,
-      key: key || undefined,
-    });
+    createMutation.mutate(formData);
   };
-  
+
+  // Handle edit form submission
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editItemId) {
+      updateMutation.mutate({ id: editItemId, data: formData });
+    }
+  };
+
+  // Open edit dialog with item data
+  const handleEditClick = (item: TrackingItem) => {
+    setEditItemId(item.id);
+    setFormData({
+      name: item.name,
+      type: item.type,
+      url: item.url,
+      description: item.description || "",
+      isActive: item.isActive
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  // Handle delete confirmation
+  const handleDeleteConfirm = () => {
+    if (deleteItemId) {
+      deleteMutation.mutate(deleteItemId);
+    }
+  };
+
+  // Handle toggle status
   const handleToggleStatus = (id: number) => {
     toggleStatusMutation.mutate(id);
   };
-  
-  const handleDelete = (id: number) => {
-    if (window.confirm("Are you sure you want to delete this tracking item?")) {
-      deleteTrackingItemMutation.mutate(id);
-    }
-  };
-  
-  const isAdmin = user?.role === "admin";
-  const trackingItems = trackingData?.trackingItems || [];
-  
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Live Tracking</h2>
-        {isAdmin && (
-          <Button onClick={() => setIsAddingNew(!isAddingNew)}>
-            {isAddingNew ? "Cancel" : "Add New Tracking Item"}
-          </Button>
-        )}
+
+  if (user?.role !== "admin") {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-muted-foreground">You don't have permission to access this page.</p>
       </div>
-      
-      {isAddingNew && isAdmin && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Add New Tracking Item</CardTitle>
-            <CardDescription>
-              Add a new app or website to track and display to users.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Live Tracking Management</h2>
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="flex items-center gap-1">
+              <Plus className="h-4 w-4" />
+              <span>Add New</span>
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Tracking Item</DialogTitle>
+              <DialogDescription>
+                Create a new tracking item for your clients to monitor.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleCreateSubmit}>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-2">
+                  <Label htmlFor="name" className="col-span-4">
+                    Name
+                  </Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className="col-span-4"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-2">
+                  <Label htmlFor="type" className="col-span-4">
+                    Type
+                  </Label>
+                  <Select 
+                    name="type" 
+                    value={formData.type} 
+                    onValueChange={(value) => handleSelectChange("type", value)}
+                  >
+                    <SelectTrigger className="col-span-4">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="website">Website</SelectItem>
+                      <SelectItem value="api">API</SelectItem>
+                      <SelectItem value="service">Service</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-2">
+                  <Label htmlFor="url" className="col-span-4">
+                    URL
+                  </Label>
+                  <Input
+                    id="url"
+                    name="url"
+                    type="url"
+                    value={formData.url}
+                    onChange={handleInputChange}
+                    className="col-span-4"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-2">
+                  <Label htmlFor="description" className="col-span-4">
+                    Description
+                  </Label>
+                  <Input
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    className="col-span-4"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="isActive"
+                    checked={formData.isActive}
+                    onCheckedChange={(checked) => handleSwitchChange("isActive", checked)}
+                  />
+                  <Label htmlFor="isActive">Active</Label>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit" disabled={createMutation.isPending}>
+                  {createMutation.isPending ? (
+                    <>
+                      <CircleDashed className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    "Create"
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="active">Active</TabsTrigger>
+          <TabsTrigger value="inactive">Inactive</TabsTrigger>
+        </TabsList>
+        <TabsContent value="all" className="mt-4">
+          {renderTrackingItemsTable(filteredItems)}
+        </TabsContent>
+        <TabsContent value="active" className="mt-4">
+          {renderTrackingItemsTable(filteredItems)}
+        </TabsContent>
+        <TabsContent value="inactive" className="mt-4">
+          {renderTrackingItemsTable(filteredItems)}
+        </TabsContent>
+      </Tabs>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Tracking Item</DialogTitle>
+            <DialogDescription>
+              Modify the tracking item details.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit}>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-2">
+                <Label htmlFor="edit-name" className="col-span-4">
+                  Name
+                </Label>
                 <Input
-                  id="name"
-                  placeholder="My App"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  id="edit-name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  className="col-span-4"
                   required
                 />
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="url">URL</Label>
+              <div className="grid grid-cols-4 items-center gap-2">
+                <Label htmlFor="edit-type" className="col-span-4">
+                  Type
+                </Label>
+                <Select 
+                  name="type" 
+                  value={formData.type} 
+                  onValueChange={(value) => handleSelectChange("type", value)}
+                >
+                  <SelectTrigger className="col-span-4">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="website">Website</SelectItem>
+                    <SelectItem value="api">API</SelectItem>
+                    <SelectItem value="service">Service</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-2">
+                <Label htmlFor="edit-url" className="col-span-4">
+                  URL
+                </Label>
                 <Input
-                  id="url"
-                  placeholder="https://example.com"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
+                  id="edit-url"
+                  name="url"
+                  type="url"
+                  value={formData.url}
+                  onChange={handleInputChange}
+                  className="col-span-4"
                   required
                 />
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="type">Type</Label>
-                <Tabs value={type} onValueChange={(value) => setType(value as "app" | "website")}>
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="website">Website</TabsTrigger>
-                    <TabsTrigger value="app">Mobile App</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="description">Description (Optional)</Label>
+              <div className="grid grid-cols-4 items-center gap-2">
+                <Label htmlFor="edit-description" className="col-span-4">
+                  Description
+                </Label>
                 <Input
-                  id="description"
-                  placeholder="Brief description of the tracked item"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  id="edit-description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  className="col-span-4"
                 />
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="key">Access Key (Optional)</Label>
-                <Input
-                  id="key"
-                  placeholder="Secret key for restricted access"
-                  value={key}
-                  onChange={(e) => setKey(e.target.value)}
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="edit-isActive"
+                  checked={formData.isActive}
+                  onCheckedChange={(checked) => handleSwitchChange("isActive", checked)}
                 />
+                <Label htmlFor="edit-isActive">Active</Label>
               </div>
-              
-              <Button type="submit" disabled={addTrackingItemMutation.isPending}>
-                {addTrackingItemMutation.isPending ? (
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Adding...
+                    <CircleDashed className="mr-2 h-4 w-4 animate-spin" />
+                    Updating...
                   </>
                 ) : (
-                  "Add Tracking Item"
+                  "Update"
                 )}
               </Button>
-            </form>
-          </CardContent>
-        </Card>
-      )}
-      
-      {isLoadingTrackingItems ? (
-        <div className="flex justify-center p-8">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      ) : trackingItems.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center p-6">
-            <div className="rounded-full bg-muted p-3">
-              <Eye className="h-6 w-6" />
-            </div>
-            <h3 className="mt-4 text-lg font-medium">No tracking items available</h3>
-            <p className="mt-2 text-sm text-muted-foreground text-center">
-              {isAdmin
-                ? "Add your first tracking item to monitor websites or apps."
-                : "There are no items being tracked at the moment."}
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {trackingItems.map((item: TrackingItem) => (
-            <Card key={item.id} className={!item.isActive ? "opacity-60" : ""}>
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle>{item.name}</CardTitle>
-                    <CardDescription className="mt-1">
-                      {item.type === "website" ? (
-                        <span className="flex items-center">
-                          <Globe className="h-3 w-3 mr-1" /> Website
-                        </span>
-                      ) : (
-                        <span className="flex items-center">
-                          <Upload className="h-3 w-3 mr-1" /> Mobile App
-                        </span>
-                      )}
-                    </CardDescription>
-                  </div>
-                  {item.thumbnailUrl && (
-                    <div className="h-10 w-10 rounded overflow-hidden">
-                      <img 
-                        src={item.thumbnailUrl} 
-                        alt={item.name} 
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-2">
-                  {item.description || "No description provided."}
-                </p>
-                <a
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-blue-600 hover:underline break-all"
-                >
-                  {item.url}
-                </a>
-              </CardContent>
-              {isAdmin && (
-                <CardFooter className="flex justify-between pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleToggleStatus(item.id)}
-                  >
-                    {item.isActive ? "Deactivate" : "Activate"}
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDelete(item.id)}
-                  >
-                    Delete
-                  </Button>
-                </CardFooter>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteItemId} onOpenChange={(open) => !open && setDeleteItemId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the tracking item.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm}>
+              {deleteMutation.isPending ? (
+                <>
+                  <CircleDashed className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
               )}
-            </Card>
-          ))}
-        </div>
-      )}
-      
-      {selectedItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-auto">
-            <div className="p-4 border-b">
-              <h3 className="text-lg font-medium">{selectedItem.name}</h3>
-              <Button
-                className="absolute top-4 right-4"
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedItem(null)}
-              >
-                &times;
-              </Button>
-            </div>
-            <div className="p-0">
-              <iframe
-                src={selectedItem.url}
-                className="w-full h-[70vh]"
-                title={selectedItem.name}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
+
+  function renderTrackingItemsTable(items: TrackingItem[]) {
+    if (isFetching) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <CircleDashed className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      );
+    }
+
+    if (items.length === 0) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">No tracking items found.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>URL</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell className="font-medium">
+                  <div className="flex items-center">
+                    {item.type === "website" ? (
+                      <Globe className="mr-2 h-4 w-4 text-blue-500" />
+                    ) : item.type === "api" ? (
+                      <Activity className="mr-2 h-4 w-4 text-purple-500" />
+                    ) : (
+                      <Activity className="mr-2 h-4 w-4 text-gray-500" />
+                    )}
+                    {item.name}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="capitalize">
+                    {item.type}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center">
+                    <span className="truncate max-w-[200px]">{item.url}</span>
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-1 text-muted-foreground hover:text-foreground"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={item.isActive}
+                      onCheckedChange={() => handleToggleStatus(item.id)}
+                      disabled={toggleStatusMutation.isPending}
+                    />
+                    <span className={item.isActive ? "text-green-600" : "text-muted-foreground"}>
+                      {item.isActive ? "Active" : "Inactive"}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleEditClick(item)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                      <span className="sr-only">Edit</span>
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => setDeleteItemId(item.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Delete</span>
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  }
 }
