@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Sidebar } from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Menu, Bell, FileText, MessageSquare, Paperclip, ActivityIcon } from "lucide-react";
+import { Plus, Menu, Bell, FileText, MessageSquare, Paperclip, ActivityIcon, Upload, Settings, Send } from "lucide-react";
 import { Project, Message, User, Activity as BaseActivity } from "@shared/schema";
 import { useAuth } from "@/context/auth-context";
+import { FloatingActionMenu } from "@/components/mobile/floating-action-menu";
 
 // Enhanced Activity interface that matches our extended schema
 interface Activity extends Omit<BaseActivity, 'referenceId' | 'referenceType' | 'isRead' | 'createdAt'> {
@@ -587,6 +589,38 @@ export default function CustomerDashboard() {
           setShowTour(false);
           localStorage.setItem('onboarding-tour-completed-customer', 'true');
         }}
+        userRole="customer"
+      />
+      
+      {/* Quick Action Floating Menu */}
+      <FloatingActionMenu 
+        items={[
+          {
+            icon: <Plus size={20} />,
+            label: "New Project",
+            onClick: () => setIsProjectModalOpen(true),
+            color: "bg-blue-500 text-white"
+          },
+          {
+            icon: <MessageSquare size={20} />,
+            label: "Messages",
+            onClick: () => setLocation('/messages'),
+            color: "bg-green-500 text-white"
+          },
+          {
+            icon: <Upload size={20} />,
+            label: "Upload Files",
+            onClick: () => setLocation('/projects'),
+            color: "bg-purple-500 text-white"
+          },
+          {
+            icon: <Settings size={20} />,
+            label: "Settings",
+            onClick: () => setLocation('/settings'),
+            color: "bg-gray-700 text-white"
+          }
+        ]}
+        position="bottom-right"
         userRole="customer"
       />
       
