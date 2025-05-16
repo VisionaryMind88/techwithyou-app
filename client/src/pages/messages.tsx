@@ -192,15 +192,11 @@ export default function MessagesPage() {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar - Fixed and always visible */}
-      <div className="hidden md:block fixed inset-y-0 left-0 z-50 h-full">
-        <div className="h-full">
-          <Sidebar />
-        </div>
-      </div>
+      {/* Sidebar */}
+      <Sidebar />
       
-      {/* Main Content - with left margin for sidebar */}
-      <div className="flex-1 flex flex-col overflow-hidden md:ml-64">
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="bg-white shadow-sm">
           <div className="px-6 py-4">

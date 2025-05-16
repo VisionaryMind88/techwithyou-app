@@ -145,11 +145,9 @@ export default function CustomerDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 pb-16 md:pb-0">
       <div className="flex">
-        {/* Sidebar - Desktop - Now always visible and fixed */}
-        <div className="hidden md:block fixed inset-y-0 left-0 z-50 h-full">
-          <div className="h-full">
-            <Sidebar />
-          </div>
+        {/* Sidebar - Desktop */}
+        <div className="hidden md:block fixed inset-y-0 left-0 z-10">
+          <Sidebar />
         </div>
 
         {/* Sidebar - Mobile */}

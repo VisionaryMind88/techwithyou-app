@@ -60,7 +60,28 @@ export function LiveTrackingSidebar() {
             </div>
           </AccordionTrigger>
           <AccordionContent className="pb-1 pt-1 bg-green-700 rounded-md mx-1 shadow-inner" style={{ boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)' }}>
-            {/* Search bar has been removed */}
+            {/* Search Input */}
+            <div className="mb-2 px-1">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-green-300" />
+                <Input
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search tracking items..."
+                  className="h-8 w-full pl-8 text-xs bg-green-800 border-green-600 text-white placeholder:text-green-300"
+                />
+                {searchTerm && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-2 py-0 text-green-300 hover:text-white hover:bg-transparent"
+                    onClick={() => setSearchTerm('')}
+                  >
+                    ×
+                  </Button>
+                )}
+              </div>
+            </div>
             
             {isLoading ? (
               <div className="flex items-center justify-center py-4">
