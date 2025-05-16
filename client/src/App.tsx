@@ -90,62 +90,55 @@ function Router() {
   // Debug user role
   console.log("User authenticated with role:", user?.role);
   
-  // User is authenticated at this point - handle customer role
-  if (user?.role === "customer") {
-    console.log("Rendering customer routes");
-    
-    if (location === '/') {
-      return <CustomerDashboard />;
-    }
-    
-    return (
-      <Switch>
-        <Route path="/projects/:id" component={ProjectDetail} />
-        <Route path="/projects" component={ProjectsPage} />
-        <Route path="/messages" component={MessagesPage} />
-        <Route path="/tracking/view" component={TrackingViewPage} />
-        <Route path="/tracking" component={TrackingPage} />
-        <Route path="/settings" component={SettingsPage} />
-        <Route path="/payment-checkout" component={PaymentCheckoutPage} />
-        <Route path="/payment-success" component={PaymentSuccessPage} />
-        <Route path="/" component={CustomerDashboard} />
-        <Route component={NotFound} />
-      </Switch>
-    );
-  }
+  // Determine which dashboard to use based on role
+  const DashboardComponent = user?.role === "admin" ? AdminDashboard : CustomerDashboard;
+
+  // This approach uses more direct component rendering based on paths
+  // instead of relying on complex route matching
   
-  // Handle admin role
-  if (user?.role === "admin") {
-    console.log("Rendering admin routes");
-    
-    if (location === '/') {
-      return <AdminDashboard />;
-    }
-    
-    return (
-      <Switch>
-        <Route path="/projects/:id" component={ProjectDetail} />
-        <Route path="/projects" component={ProjectsPage} />
-        <Route path="/messages" component={MessagesPage} />
-        <Route path="/tracking/view" component={TrackingViewPage} />
-        <Route path="/tracking" component={TrackingPage} />
-        <Route path="/settings" component={SettingsPage} />
-        <Route path="/users" component={UsersPage} />
-        <Route path="/payment-checkout" component={PaymentCheckoutPage} />
-        <Route path="/payment-success" component={PaymentSuccessPage} />
-        <Route path="/" component={AdminDashboard} />
-        <Route component={NotFound} />
-      </Switch>
-    );
-  }
+  // Handle root path explicitly
+  if (location === '/') {
+    return <DashboardComponent />;
+  } 
   
-  // Fallback if authenticated but role is unknown
-  return (
-    <div className="flex flex-col items-center justify-center h-screen">
-      <h1 className="text-2xl font-bold mb-4">Access Error</h1>
-      <p className="text-gray-600">Your role ({user?.role || 'unknown'}) doesn't have access to this application.</p>
-    </div>
-  );
+  // Handle projects with ID parameter
+  else if (location.startsWith('/projects/')) {
+    const projectId = location.split('/')[2];
+    return <ProjectDetail params={{ id: projectId }} />;
+  } 
+  
+  // Handle other specific paths
+  else if (location === '/projects') {
+    return <ProjectsPage />;
+  } 
+  else if (location === '/messages') {
+    return <MessagesPage />;
+  } 
+  else if (location === '/tracking/view') {
+    return <TrackingViewPage />;
+  } 
+  else if (location === '/tracking') {
+    return <TrackingPage />;
+  } 
+  else if (location === '/settings') {
+    return <SettingsPage />;
+  } 
+  else if (location === '/payment-checkout') {
+    return <PaymentCheckoutPage />;
+  } 
+  else if (location === '/payment-success') {
+    return <PaymentSuccessPage />;
+  } 
+  
+  // Admin-only routes
+  else if (location === '/users' && user?.role === 'admin') {
+    return <UsersPage />;
+  } 
+  
+  // Not found for anything else
+  else {
+    return <NotFound />;
+  }
 }
 
 function App() {
