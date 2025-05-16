@@ -446,4 +446,54 @@ export function registerAuthRoutes(app: Express) {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
+  
+  // Delete user (admin only)
+  app.delete("/api/users/:id", async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      const userId = parseInt(req.params.id);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: 'Invalid user ID' });
+      }
+      
+      // Don't allow admins to delete themselves
+      if (userId === req.user.id) {
+        return res.status(400).json({ message: 'Cannot delete your own account' });
+      }
+      
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Delete user
+      await storage.deleteUser(userId);
+      
+      // Create activity for user deletion
+      await storage.createActivity({
+        type: 'user_deleted',
+        description: `Admin deleted user: ${user.email}`,
+        userId: req.user.id,
+        projectId: null,
+        isRead: false,
+        referenceId: userId,
+        referenceType: 'user',
+        metadata: { deletedUserId: userId },
+      });
+      
+      res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+      console.error('Delete user error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
 }
