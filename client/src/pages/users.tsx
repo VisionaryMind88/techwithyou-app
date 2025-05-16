@@ -14,6 +14,7 @@ import { FloatingActionMenu } from "@/components/mobile/floating-action-menu";
 import { BottomNavigation } from "@/components/mobile/bottom-navigation";
 import { MobileHeader } from "@/components/mobile/mobile-header";
 import { UserForm } from "@/components/admin/user-form";
+import { UserDetailDialog } from "@/components/admin/user-detail-dialog";
 import { DirectChatModule } from "@/components/admin/direct-chat-module";
 import { 
   Dialog,
@@ -44,6 +45,7 @@ export default function UsersPage() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isEditingUser, setIsEditingUser] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isViewingUserDetails, setIsViewingUserDetails] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
@@ -111,10 +113,7 @@ export default function UsersPage() {
 
   const handleViewUser = (user: User) => {
     setSelectedUser(user);
-    toast({
-      title: "View user",
-      description: `Viewing user ${user.email}`,
-    });
+    setIsViewingUserDetails(true);
   };
 
   const handleEditUser = (user: User) => {
