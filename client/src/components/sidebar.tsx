@@ -195,16 +195,22 @@ export function Sidebar({ isMobile = false, onClose, userRole }: SidebarProps & 
           )}
           
           {/* Live Tracking Section */}
-          <motion.li 
-            className="mt-4"
-            variants={staggerItem}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.5 }}
-          >
-            <div className="px-2">
-              <LiveTrackingSidebar />
-            </div>
+          <motion.li variants={staggerItem}>
+            <Link 
+              to="/tracking" 
+              className={cn(
+                "flex items-center p-2 rounded-md hover:bg-blue-500 text-white",
+                isActive("/tracking") && "bg-blue-700 text-white font-medium"
+              )}
+            >
+              <AnimatedIcon className="mr-3">
+                <Activity className={cn("h-5 w-5 text-green-400", isActive("/tracking") && "text-green-300")} />
+              </AnimatedIcon>
+              <span className={isActive("/tracking") ? "text-white" : "text-green-300"}>{t('tracking.title')}</span>
+              
+              {/* Badge showing active tracking items if any */}
+              <LiveTrackingSidebar minimal={true} />
+            </Link>
           </motion.li>
         </motion.ul>
       </motion.nav>

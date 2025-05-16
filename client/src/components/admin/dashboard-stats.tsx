@@ -1,9 +1,11 @@
 import { RiFolderLine, RiTimeLine, RiUserLine, RiChat3Line } from "react-icons/ri";
 import { ArrowUp } from "lucide-react";
 import React from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface StatItem {
   label: string;
+  translationKey?: string;
   value: number;
   icon: React.ElementType;
   color: string;
@@ -12,6 +14,7 @@ interface StatItem {
     value: number;
     isPositive: boolean;
     period: string;
+    periodTranslationKey?: string;
   };
   description?: string;
 }
@@ -54,6 +57,7 @@ export function AdminDashboardStats({
   stats, 
   isLoading = false
 }: AdminDashboardStatsProps) {
+  const { t } = useLanguage();
   
   // Handle loading state
   if (isLoading) {
@@ -64,6 +68,7 @@ export function AdminDashboardStats({
   const defaultStats = {
     totalProjects: {
       label: "Total Projects",
+      translationKey: "stats.totalProjects",
       value: 0,
       icon: RiFolderLine,
       color: "text-primary-600",
@@ -71,11 +76,13 @@ export function AdminDashboardStats({
       change: {
         value: 0,
         isPositive: true,
-        period: "from last month"
+        period: "from last month",
+        periodTranslationKey: "stats.fromLastMonth"
       }
     },
     pendingApprovals: {
       label: "Pending Approvals",
+      translationKey: "stats.pendingApprovals",
       value: 0,
       icon: RiTimeLine,
       color: "text-warning",
@@ -83,11 +90,13 @@ export function AdminDashboardStats({
       change: {
         value: 0,
         isPositive: false,
-        period: "from last week"
+        period: "from last week",
+        periodTranslationKey: "stats.fromLastWeek"
       }
     },
     activeCustomers: {
       label: "Active Customers",
+      translationKey: "stats.activeCustomers",
       value: 0,
       icon: RiUserLine,
       color: "text-success",
@@ -95,11 +104,13 @@ export function AdminDashboardStats({
       change: {
         value: 0,
         isPositive: true,
-        period: "from last month"
+        period: "from last month",
+        periodTranslationKey: "stats.fromLastMonth"
       }
     },
     unreadMessages: {
       label: "Unread Messages",
+      translationKey: "stats.unreadMessages",
       value: 0,
       icon: RiChat3Line,
       color: "text-purple-600",
@@ -107,7 +118,8 @@ export function AdminDashboardStats({
       change: {
         value: 0,
         isPositive: false,
-        period: "from yesterday"
+        period: "from yesterday",
+        periodTranslationKey: "stats.fromYesterday"
       }
     }
   };
@@ -133,7 +145,7 @@ export function AdminDashboardStats({
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-medium text-gray-700">
-                {stat.label}
+                {stat.translationKey ? t(stat.translationKey) : stat.label}
               </h3>
               <p className="text-2xl font-bold text-gray-800">
                 {stat.value}
@@ -157,7 +169,7 @@ export function AdminDashboardStats({
               </span>
             </span>
             <span className="text-gray-500 ml-2">
-              {stat.change.period}
+              {stat.change.periodTranslationKey ? t(stat.change.periodTranslationKey) : stat.change.period}
             </span>
           </div>
         </div>

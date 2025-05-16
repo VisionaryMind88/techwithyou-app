@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -6,22 +6,18 @@ import {
   Globe, 
   Activity, 
   ExternalLink,
-  ChevronRight, 
-  ChevronDown,
-  CircleDashed,
-  Search
+  CircleDashed
 } from "lucide-react";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { LiveTracker } from "../live-tracking/live-tracker";
 
-export function LiveTrackingSidebar() {
-  const [isOpen, setIsOpen] = useState(true);
+interface LiveTrackingSidebarProps {
+  minimal?: boolean;
+}
+
+export function LiveTrackingSidebar({ minimal = false }: LiveTrackingSidebarProps) {
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const { user, isAuthenticated } = useAuth();
   const { t } = useLanguage();
   
@@ -31,94 +27,81 @@ export function LiveTrackingSidebar() {
   });
   
   const trackingItems = trackingData?.trackingItems || [];
-  const activeItems = trackingItems
-    .filter((item: any) => item.isActive)
-    .filter((item: any) => 
-      searchTerm === '' || 
-      item.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+  const activeItems = trackingItems.filter((item: any) => item.isActive);
+  
+  // If minimal mode, just return the badge with counter
+  if (minimal) {
+    if (activeItems.length > 0) {
+      return (
+        <Badge 
+          variant="outline" 
+          className="ml-auto bg-blue-600 text-white border-blue-400 hover:bg-blue-500 shadow-lg"
+          style={{
+            textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+            boxShadow: '0 3px 10px rgba(0, 157, 255, 0.2), 0 0 3px rgba(0, 157, 255, 0.3)'
+          }}
+        >
+          {activeItems.length}
+        </Badge>
+      );
+    }
+    return null;
+  }
   
   return (
-    <div className="space-y-4 py-2">
-      <Accordion type="single" collapsible defaultValue="live-tracking">
-        <AccordionItem value="live-tracking" className="border-none">
-          <AccordionTrigger className="py-2 text-sm hover:no-underline text-white">
-            <div className="flex items-center">
-              <Activity className="mr-2 h-4 w-4 text-green-400" />
-              <span className="text-green-300 font-medium">{t('tracking.title')}</span>
-              {activeItems.length > 0 && (
-                <Badge 
-                  variant="outline" 
-                  className="ml-2 bg-blue-600 text-white border-blue-400 hover:bg-blue-500 shadow-lg transform translate-z-1"
-                  style={{
-                    textShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                    boxShadow: '0 3px 10px rgba(0, 157, 255, 0.2), 0 0 3px rgba(0, 157, 255, 0.3)',
-                    transform: 'translateY(-1px)'
-                  }}
-                >
-                  {activeItems.length}
-                </Badge>
-              )}
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="pb-1 pt-1 bg-blue-700 rounded-md mx-1 shadow-inner" style={{ boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)' }}>
-            {/* Search bar removed as requested */}
-            
-            {isLoading ? (
-              <div className="flex items-center justify-center py-4">
-                <CircleDashed className="h-5 w-5 animate-spin text-blue-300" />
+    <div className="space-y-4 py-2 px-4">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-medium text-blue-800">{t('tracking.title')}</h2>
+        {user?.role === "admin" && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-sm text-blue-600"
+            onClick={() => setIsTrackingModalOpen(true)}
+          >
+            {t('tracking.manageItems') || "Manage tracking items"}
+          </Button>
+        )}
+      </div>
+      
+      {isLoading ? (
+        <div className="flex items-center justify-center py-4">
+          <CircleDashed className="h-5 w-5 animate-spin text-blue-500" />
+        </div>
+      ) : activeItems.length === 0 ? (
+        <div className="px-2 py-3 text-sm text-gray-500 text-center">
+          {t('tracking.noItems') || "No active tracking items"}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {activeItems.map((item: any) => (
+            <div 
+              key={item.id} 
+              className="group flex items-center justify-between rounded-md px-3 py-2 text-sm hover:bg-blue-50 bg-white mb-2 shadow-sm border border-blue-100"
+              style={{ 
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <div className="flex items-center truncate">
+                {item.type === "website" ? (
+                  <Globe className="mr-2 h-4 w-4 flex-shrink-0 text-blue-500" />
+                ) : (
+                  <Activity className="mr-2 h-4 w-4 flex-shrink-0 text-green-500" />
+                )}
+                <span className="truncate text-gray-800">{item.name}</span>
               </div>
-            ) : activeItems.length === 0 ? (
-              <div className="px-2 py-3 text-sm text-blue-300 text-center">
-                {searchTerm ? t('tracking.noMatchingItems') || "No matching tracking items" : t('tracking.noItems') || "No active tracking items"}
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {activeItems.map((item: any) => (
-                  <div 
-                    key={item.id} 
-                    className="group flex items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-blue-600 bg-blue-800 mb-1 shadow-md"
-                    style={{ 
-                      transform: 'translateZ(5px)', 
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.2), 0 0 1px rgba(0,157,255,0.3)',
-                      transition: 'all 0.2s ease',
-                      position: 'relative'
-                    }}
-                  >
-                    <div className="flex items-center truncate">
-                      {item.type === "website" ? (
-                        <Globe className="mr-2 h-4 w-4 flex-shrink-0 text-blue-300" />
-                      ) : (
-                        <Activity className="mr-2 h-4 w-4 flex-shrink-0 text-blue-300" />
-                      )}
-                      <span className="truncate text-white">{item.name}</span>
-                    </div>
-                    <a 
-                      href={item.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="ml-2 flex-shrink-0 opacity-50 group-hover:opacity-100"
-                    >
-                      <ExternalLink className="h-4 w-4 text-blue-300 hover:text-white" />
-                    </a>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {user?.role === "admin" && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="mt-2 w-full justify-start text-xs text-muted-foreground"
-                onClick={() => setIsTrackingModalOpen(true)}
+              <a 
+                href={item.url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="ml-2 flex-shrink-0 opacity-50 group-hover:opacity-100"
               >
-                {t('tracking.manageItems') || "Manage tracking items"}
-              </Button>
-            )}
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+                <ExternalLink className="h-4 w-4 text-blue-500 hover:text-blue-700" />
+              </a>
+            </div>
+          ))}
+        </div>
+      )}
 
       {isTrackingModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">

@@ -14,6 +14,7 @@ import ProjectsPage from "@/pages/projects";
 import MessagesPage from "@/pages/messages";
 import SettingsPage from "@/pages/settings";
 import UsersPage from "@/pages/users";
+import TrackingPage from "@/pages/tracking-page";
 import PaymentSuccessPage from "@/pages/payment-success";
 import PaymentCheckoutPage from "@/pages/payment-checkout";
 import { useAuth, AuthProvider } from "./context/auth-context";
@@ -93,6 +94,7 @@ function Router() {
         <Route path="/projects" component={ProjectsPage} />
         <Route path="/projects/:id" component={ProjectDetail} />
         <Route path="/messages" component={MessagesPage} />
+        <Route path="/tracking" component={TrackingPage} />
         <Route path="/settings" component={SettingsPage} />
         <Route path="/payment-checkout" component={PaymentCheckoutPage} />
         <Route path="/payment-success" component={PaymentSuccessPage} />
@@ -108,6 +110,7 @@ function Router() {
         <Route path="/projects" component={ProjectsPage} />
         <Route path="/projects/:id" component={ProjectDetail} />
         <Route path="/messages" component={MessagesPage} />
+        <Route path="/tracking" component={TrackingPage} />
         <Route path="/settings" component={SettingsPage} />
         <Route path="/users" component={UsersPage} />
         <Route path="/payment-checkout" component={PaymentCheckoutPage} />
