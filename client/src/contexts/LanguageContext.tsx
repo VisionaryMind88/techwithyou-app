@@ -248,6 +248,120 @@ const translations: Translations = {
     nl: 'Notificaties',
     en: 'Notifications',
   },
+  
+  // Help system
+  'help.title': {
+    nl: 'Hulp & Ondersteuning',
+    en: 'Help & Support',
+  },
+  'help.loading': {
+    nl: 'Hulpinformatie laden...',
+    en: 'Loading help information...',
+  },
+  'help.askPlaceholder': {
+    nl: 'Stel een vraag...',
+    en: 'Ask a question...',
+  },
+  'help.askAI': {
+    nl: 'Stel een vraag aan AI',
+    en: 'Ask AI a question',
+  },
+  'help.hideAI': {
+    nl: 'Verberg AI assistent',
+    en: 'Hide AI assistant',
+  },
+  'help.emptyQuestion': {
+    nl: 'Lege vraag',
+    en: 'Empty question',
+  },
+  'help.typeQuestion': {
+    nl: 'Typ eerst een vraag.',
+    en: 'Please type a question first.',
+  },
+  'help.noAnswer': {
+    nl: 'Sorry, ik kon geen antwoord vinden op deze vraag.',
+    en: 'Sorry, I couldn\'t find an answer to this question.',
+  },
+  'help.aiUnavailable': {
+    nl: 'AI-hulp is momenteel niet beschikbaar. Probeer het later nog eens.',
+    en: 'AI help is currently unavailable. Please try again later.',
+  },
+  'help.errorAskingQuestion': {
+    nl: 'Er is een fout opgetreden bij het verwerken van uw vraag.',
+    en: 'An error occurred while processing your question.',
+  },
+  'help.wasHelpful': {
+    nl: 'Was dit antwoord nuttig?',
+    en: 'Was this answer helpful?',
+  },
+  'help.yes': {
+    nl: 'Ja',
+    en: 'Yes',
+  },
+  'help.no': {
+    nl: 'Nee',
+    en: 'No',
+  },
+  'help.feedbackReceived': {
+    nl: 'Feedback ontvangen',
+    en: 'Feedback received',
+  },
+  'help.thankYouFeedback': {
+    nl: 'Bedankt voor je feedback!',
+    en: 'Thank you for your feedback!',
+  },
+  'help.feedbackError': {
+    nl: 'Fout bij verzenden feedback',
+    en: 'Error submitting feedback',
+  },
+  'help.tryAgainLater': {
+    nl: 'Probeer het later opnieuw.',
+    en: 'Please try again later.',
+  },
+  'help.userQuestion': {
+    nl: 'U',
+    en: 'You',
+  },
+  'help.aiResponse': {
+    nl: 'Assistent',
+    en: 'Assistant',
+  },
+  'help.defaultHelp': {
+    nl: 'Hoe kan ik je helpen? Stel een vraag over de applicatie.',
+    en: 'How can I help you? Ask a question about the application.',
+  },
+  'help.generalHelp': {
+    nl: 'Welkom bij de help functie. Kies een onderwerp of stel een vraag om hulp te krijgen.',
+    en: 'Welcome to the help feature. Choose a topic or ask a question to get assistance.',
+  },
+  'help.dashboardHelp': {
+    nl: 'Het dashboard toont een overzicht van al je projecten, recente activiteiten en berichten. Gebruik het zijmenu om te navigeren naar verschillende onderdelen van de applicatie.',
+    en: 'The dashboard shows an overview of all your projects, recent activities, and messages. Use the sidebar to navigate to different parts of the application.',
+  },
+  'help.projectsHelp': {
+    nl: 'Hier kun je al je projecten bekijken en beheren. Klik op een project om details te zien of maak een nieuw project aan.',
+    en: 'Here you can view and manage all your projects. Click on a project to see details or create a new project.',
+  },
+  'help.messagesHelp': {
+    nl: 'Communiceer hier met het projectteam. Alle berichten worden opgeslagen en zijn altijd terug te vinden per project.',
+    en: 'Communicate with the project team here. All messages are stored and can always be found per project.',
+  },
+  'help.filesHelp': {
+    nl: 'Upload en beheer bestanden voor je projecten. Je kunt meerdere versies van bestanden bijhouden en bekijken wie welke wijzigingen heeft aangebracht.',
+    en: 'Upload and manage files for your projects. You can keep track of multiple versions of files and see who made which changes.',
+  },
+  'help.trackingHelp': {
+    nl: 'Live tracking geeft je real-time inzicht in de voortgang van je projecten. Schakel items in of uit om bij te houden waar je aan werkt.',
+    en: 'Live tracking gives you real-time insight into the progress of your projects. Toggle items on or off to keep track of what you\'re working on.',
+  },
+  'help.settingsHelp': {
+    nl: 'Pas je accountinstellingen aan, wijzig je wachtwoord, en beheer je gebruikersprofiel vanuit dit scherm.',
+    en: 'Adjust your account settings, change your password, and manage your user profile from this screen.',
+  },
+  'help.profileHelp': {
+    nl: 'Beheer hier je persoonlijke informatie en profielfoto. Deze informatie is zichtbaar voor teamleden.',
+    en: 'Manage your personal information and profile picture here. This information is visible to team members.',
+  },
   'settings.language': {
     nl: 'Taal',
     en: 'Language',
