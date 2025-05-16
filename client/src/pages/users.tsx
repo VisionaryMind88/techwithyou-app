@@ -130,26 +130,52 @@ export default function UsersPage() {
     setIsChatOpen(true);
   };
 
-  const handleDeleteUser = async (userId: number) => {
-    setSelectedUser(users?.find(u => u.id === userId) || null);
-    setIsDeleteConfirmOpen(true);
+  const handleDeleteUser = (userId: number) => {
+    const userToDelete = users?.find(u => u.id === userId);
+    if (userToDelete) {
+      setSelectedUser(userToDelete);
+      setIsDeleteConfirmOpen(true);
+    } else {
+      toast({
+        title: "Fout",
+        description: "Gebruiker niet gevonden.",
+        variant: "destructive"
+      });
+    }
   };
   
   const confirmDeleteUser = async () => {
-    if (!selectedUser) return;
+    if (!selectedUser) {
+      toast({
+        title: "Fout",
+        description: "Geen gebruiker geselecteerd om te verwijderen.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     try {
-      await apiRequest("DELETE", `/api/users/${selectedUser.id}`);
+      const response = await apiRequest("DELETE", `/api/users/${selectedUser.id}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Fout bij verwijderen gebruiker");
+      }
+      
       queryClient.invalidateQueries({ queryKey: ["/api/users/admin"] });
       toast({
-        title: "User deleted",
-        description: "The user has been deleted successfully.",
+        title: "Gebruiker verwijderd",
+        description: "De gebruiker is succesvol verwijderd.",
       });
+      
+      // Reset state
       setIsDeleteConfirmOpen(false);
-    } catch (error) {
+      setSelectedUser(null);
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
       toast({
-        title: "Error deleting user",
-        description: "There was a problem deleting the user. Please try again.",
+        title: "Fout bij verwijderen",
+        description: error.message || "Er is een probleem opgetreden bij het verwijderen van de gebruiker.",
         variant: "destructive",
       });
     }
@@ -406,20 +432,32 @@ export default function UsersPage() {
       )}
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+      <Dialog 
+        open={isDeleteConfirmOpen} 
+        onOpenChange={(open) => {
+          setIsDeleteConfirmOpen(open);
+          if (!open) setSelectedUser(null);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete User</DialogTitle>
+            <DialogTitle>Gebruiker verwijderen</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete {selectedUser?.email}? This action cannot be undone.
+              Weet u zeker dat u {selectedUser?.email} wilt verwijderen? Deze actie kan niet ongedaan gemaakt worden.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-3 mt-4">
-            <Button variant="outline" onClick={() => setIsDeleteConfirmOpen(false)}>
-              Cancel
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsDeleteConfirmOpen(false);
+                setSelectedUser(null);
+              }}
+            >
+              Annuleren
             </Button>
             <Button variant="destructive" onClick={confirmDeleteUser}>
-              Delete
+              Verwijderen
             </Button>
           </div>
         </DialogContent>
