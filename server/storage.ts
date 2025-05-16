@@ -40,6 +40,9 @@ export interface IStorage {
   getFile(id: number): Promise<File | undefined>;
   getFilesByProject(projectId: number): Promise<File[]>;
   createFile(file: InsertFile): Promise<File>;
+  getFileVersions(fileId: number): Promise<File[]>;
+  createFileVersion(file: InsertFile, parentFileId: number, versionNote?: string): Promise<File>;
+  getLatestFileVersion(fileId: number): Promise<File | undefined>;
   
   // Messages
   getMessage(id: number): Promise<Message | undefined>;

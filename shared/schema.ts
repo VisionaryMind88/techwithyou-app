@@ -81,6 +81,10 @@ export const files = pgTable("files", {
   path: text("path").notNull(),
   projectId: integer("project_id").notNull(),
   userId: integer("user_id").notNull(),
+  isLatestVersion: boolean("is_latest_version").notNull().default(true),
+  versionNumber: integer("version_number").notNull().default(1),
+  parentFileId: integer("parent_file_id"),  // For versions, refers to the original file
+  versionNote: text("version_note"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -92,6 +96,10 @@ export const insertFileSchema = createInsertSchema(files).pick({
   path: true,
   projectId: true,
   userId: true,
+  isLatestVersion: true,
+  versionNumber: true,
+  parentFileId: true,
+  versionNote: true,
 });
 
 // MESSAGES
@@ -155,7 +163,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   activities: many(activities),
 }));
 
-export const filesRelations = relations(files, ({ one }) => ({
+export const filesRelations = relations(files, ({ one, many }) => ({
   project: one(projects, {
     fields: [files.projectId],
     references: [projects.id],
@@ -163,6 +171,13 @@ export const filesRelations = relations(files, ({ one }) => ({
   user: one(users, {
     fields: [files.userId],
     references: [users.id],
+  }),
+  parentFile: one(files, {
+    fields: [files.parentFileId],
+    references: [files.id],
+  }),
+  versions: many(files, {
+    relationName: 'fileVersions',
   }),
 }));
 
