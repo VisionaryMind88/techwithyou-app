@@ -230,11 +230,27 @@ export class DatabaseStorage implements IStorage {
   // Users
   async getUser(id: number): Promise<User | undefined> {
     try {
-      const [user] = await db.select().from(users).where(eq(users.id, id));
+      // Select specific columns to avoid profile_picture issue
+      const [user] = await db
+        .select({
+          id: users.id,
+          email: users.email,
+          password: users.password,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          role: users.role,
+          provider: users.provider,
+          providerId: users.providerId,
+          rememberToken: users.rememberToken,
+          stripeCustomerId: users.stripeCustomerId,
+          createdAt: users.createdAt
+        })
+        .from(users)
+        .where(eq(users.id, id));
       
       if (!user) return undefined;
       
-      // Add profilePicture property manually since it's not in the database yet
+      // Add profilePicture property manually
       return {
         ...user,
         profilePicture: null
@@ -247,11 +263,27 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     try {
-      const [user] = await db.select().from(users).where(eq(users.email, email));
+      // Select specific columns to avoid profile_picture issue
+      const [user] = await db
+        .select({
+          id: users.id,
+          email: users.email,
+          password: users.password,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          role: users.role,
+          provider: users.provider,
+          providerId: users.providerId,
+          rememberToken: users.rememberToken,
+          stripeCustomerId: users.stripeCustomerId,
+          createdAt: users.createdAt
+        })
+        .from(users)
+        .where(eq(users.email, email));
       
       if (!user) return undefined;
       
-      // Add profilePicture property manually since it's not in the database yet
+      // Add profilePicture property manually
       return {
         ...user,
         profilePicture: null
