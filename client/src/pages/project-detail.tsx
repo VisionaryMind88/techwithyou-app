@@ -324,7 +324,7 @@ export default function ProjectDetail() {
           </header>
 
           {/* Project Details */}
-          <div className="px-4 py-6 md:px-6 pb-16">
+          <div className="px-4 py-6 md:px-6 pb-16" id="project-details">
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
@@ -391,7 +391,7 @@ export default function ProjectDetail() {
                 <Tabs defaultValue="details">
                   <TabsList>
                     <TabsTrigger value="details">Details</TabsTrigger>
-                    <TabsTrigger value="files">Files</TabsTrigger>
+                    <TabsTrigger value="files" id="file-section-trigger">Files</TabsTrigger>
                   </TabsList>
                   
                   <TabsContent value="details" className="mt-6">
@@ -458,7 +458,7 @@ export default function ProjectDetail() {
                     </Card>
                   </TabsContent>
                   
-                  <TabsContent value="files" className="mt-6">
+                  <TabsContent value="files" className="mt-6" id="file-section">
                     <Card>
                       <CardHeader>
                         <CardTitle>Project Files</CardTitle>
