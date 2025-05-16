@@ -1,5 +1,6 @@
 /* Import accessibility styles */
 @import './styles/accessibility.css';
+@import './styles/focus-indicators.css';
 
 @tailwind base;
 @tailwind components;

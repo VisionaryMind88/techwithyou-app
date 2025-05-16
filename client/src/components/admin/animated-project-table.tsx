@@ -70,6 +70,7 @@ export function ProjectTable({
             variant="link"
             className="text-primary-600 hover:text-primary-900"
             onClick={() => onReview?.(project.id)}
+            aria-label={`Review project ${project.name}`}
           >
             Review
           </Button>
@@ -78,6 +79,7 @@ export function ProjectTable({
             variant="outline"
             className="text-success border-success hover:bg-green-50"
             onClick={() => onApprove?.(project.id)}
+            aria-label={`Approve project ${project.name}`}
           >
             Approve
           </Button>
@@ -86,6 +88,7 @@ export function ProjectTable({
             variant="outline"
             className="text-destructive border-destructive hover:bg-red-50"
             onClick={() => onReject?.(project.id)}
+            aria-label={`Reject project ${project.name}`}
           >
             Reject
           </Button>
@@ -96,19 +99,35 @@ export function ProjectTable({
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            aria-label={`Actions for project ${project.name}`}
+          >
             <MoreHorizontal className="h-4 w-4" />
-            <span className="sr-only">Actions</span>
+            <span className="sr-only">Actions for project {project.name}</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => onView?.(project.id)}>
+          <DropdownMenuItem 
+            onClick={() => onView?.(project.id)}
+            onKeyDown={(e) => e.key === 'Enter' && onView?.(project.id)}
+            tabIndex={0}
+          >
             View
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onEdit?.(project.id)}>
+          <DropdownMenuItem 
+            onClick={() => onEdit?.(project.id)}
+            onKeyDown={(e) => e.key === 'Enter' && onEdit?.(project.id)}
+            tabIndex={0}
+          >
             Edit
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onDelete?.(project.id)}>
+          <DropdownMenuItem 
+            onClick={() => onDelete?.(project.id)}
+            onKeyDown={(e) => e.key === 'Enter' && onDelete?.(project.id)}
+            tabIndex={0}
+          >
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -173,17 +192,19 @@ export function ProjectTable({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
+      role="region"
+      aria-label="Projects table"
     >
       <div className="overflow-x-auto">
-        <Table>
+        <Table aria-label="Projects">
           <TableHeader>
             <TableRow>
-              <TableHead>Project</TableHead>
-              <TableHead>Client</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead scope="col">Project</TableHead>
+              <TableHead scope="col">Client</TableHead>
+              <TableHead scope="col">Type</TableHead>
+              <TableHead scope="col">Status</TableHead>
+              <TableHead scope="col">Date</TableHead>
+              <TableHead scope="col" className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -201,12 +222,14 @@ export function ProjectTable({
                     ease: "easeOut"
                   }}
                   className="border-b hover:bg-muted/50"
+                  tabIndex={0}
+                  aria-label={`Project: ${project.name}, Status: ${getStatusStyle(project.status).label}`}
                 >
                   <TableCell className="font-medium">{project.name}</TableCell>
                   <TableCell>
                     <div className="flex items-center">
-                      <Avatar className="h-8 w-8 mr-3">
-                        <AvatarFallback>
+                      <Avatar className="h-8 w-8 mr-3" aria-label={`${project.user.firstName || project.user.email || 'Unknown user'}'s avatar`}>
+                        <AvatarFallback aria-hidden="true">
                           {project.user.firstName?.[0] || project.user.email?.[0] || '?'}
                         </AvatarFallback>
                       </Avatar>
@@ -225,6 +248,8 @@ export function ProjectTable({
                     <Badge 
                       variant="outline"
                       className={`${statusStyle.color} ${statusStyle.bg} border-0`}
+                      aria-label={`Status: ${statusStyle.label}`}
+                      role="status"
                     >
                       {statusStyle.label}
                     </Badge>

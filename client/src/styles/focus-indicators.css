@@ -1,0 +1,59 @@
+/* Focus indicators for better keyboard accessibility */
+.focus-visible-ring:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* High contrast focus indicators for better visibility */
+.high-contrast .focus-visible-ring:focus-visible {
+  outline: 3px solid #ffff00;
+  outline-offset: 3px;
+}
+
+/* Enhanced focus indicators for table rows */
+tr:focus-visible,
+tr[tabindex="0"]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -1px;
+  position: relative;
+  z-index: 10;
+}
+
+.high-contrast tr:focus-visible,
+.high-contrast tr[tabindex="0"]:focus-visible {
+  outline: 3px solid #ffff00;
+  outline-offset: -2px;
+}
+
+/* Make the dropdown buttons more accessible when focused */
+.dropdown-trigger:focus-visible {
+  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--primary);
+}
+
+.high-contrast .dropdown-trigger:focus-visible {
+  box-shadow: 0 0 0 2px #000000, 0 0 0 4px #ffff00;
+}
+
+/* Make focus visible on interactive elements for keyboard users */
+button:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--primary);
+}
+
+.high-contrast button:focus-visible,
+.high-contrast [role="button"]:focus-visible,
+.high-contrast a:focus-visible,
+.high-contrast select:focus-visible,
+.high-contrast input:focus-visible,
+.high-contrast textarea:focus-visible {
+  outline: 3px solid #ffff00;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 2px #000000, 0 0 0 4px #ffff00;
+}
