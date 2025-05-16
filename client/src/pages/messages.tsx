@@ -14,13 +14,18 @@ import {
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { MessageDetailDialog } from "@/components/message-detail-dialog";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function MessagesPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const [selectedChat, setSelectedChat] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState("");
+  const [selectedMessage, setSelectedMessage] = useState<(Message & { sender: User }) | null>(null);
+  const [isMessageDetailOpen, setIsMessageDetailOpen] = useState(false);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   // Fetch recent messages
   // We no longer need to force authentication here as it's handled by Router component
@@ -195,12 +200,26 @@ export default function MessagesPage() {
       {/* Sidebar */}
       <Sidebar />
       
+      {/* Message Detail Dialog */}
+      <MessageDetailDialog
+        message={selectedMessage}
+        isOpen={isMessageDetailOpen}
+        onClose={() => setIsMessageDetailOpen(false)}
+        onReply={() => {
+          setIsMessageDetailOpen(false);
+          // Focus the message input after closing the dialog
+          setTimeout(() => {
+            document.querySelector('input[placeholder="Type a message..."]')?.focus();
+          }, 100);
+        }}
+      />
+      
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="bg-white shadow-sm">
           <div className="px-6 py-4">
-            <h1 className="text-2xl font-bold text-gray-900">Messages</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t("messages.title") || "Messages"}</h1>
           </div>
         </header>
         
@@ -314,11 +333,15 @@ export default function MessagesPage() {
                           </p>
                         )}
                         <div 
-                          className={`p-3 rounded-lg max-w-md ${
+                          className={`p-3 rounded-lg max-w-md cursor-pointer hover:shadow-md transition-shadow ${
                             message.senderId === user?.id 
                               ? 'bg-primary text-white rounded-tr-none' 
                               : 'bg-white border rounded-tl-none'
                           }`}
+                          onClick={() => {
+                            setSelectedMessage(message);
+                            setIsMessageDetailOpen(true);
+                          }}
                         >
                           <p>{message.content}</p>
                         </div>

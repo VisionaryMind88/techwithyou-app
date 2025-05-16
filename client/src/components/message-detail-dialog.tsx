@@ -65,17 +65,12 @@ export function MessageDetailDialog({
                 {message.content}
               </div>
               
-              {message.attachmentPath && (
+              {message.attachments && (
                 <div className="mt-3 flex items-center">
                   <Paperclip className="h-4 w-4 mr-2 text-gray-500" />
-                  <a 
-                    href={message.attachmentPath} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:underline"
-                  >
+                  <span className="text-sm text-blue-600">
                     {t("messages.attachment") || "Attachment"}
-                  </a>
+                  </span>
                 </div>
               )}
             </div>
