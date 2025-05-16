@@ -65,7 +65,11 @@ export function UserForm({ isOpen, onClose, user }: UserFormProps) {
 
   // Voor het bewerken van een gebruiker is het wachtwoord optioneel
   const schema = isEditMode
-    ? userFormSchema.omit({ password: true }).extend({
+    ? z.object({
+        email: userFormSchema.shape.email,
+        firstName: userFormSchema.shape.firstName,
+        lastName: userFormSchema.shape.lastName,
+        role: userFormSchema.shape.role,
         password: z.string().optional(),
       })
     : userFormSchema;
