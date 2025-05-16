@@ -20,6 +20,8 @@ import { MoreHorizontal } from "lucide-react";
 import { format } from "date-fns";
 import { Project, User } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
+import { motion } from "framer-motion";
+import { staggerContainer, staggerItem, fadeIn } from "@/lib/animation";
 
 interface ProjectTableProps {
   projects: Array<Project & { user: User }>;

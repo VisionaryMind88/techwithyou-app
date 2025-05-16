@@ -1,5 +1,7 @@
 import { RiFolderLine, RiTimeLine, RiUserLine, RiChat3Line } from "react-icons/ri";
 import { ArrowUp } from "lucide-react";
+import { motion } from "framer-motion";
+import { staggerContainer, staggerItem } from "@/lib/animation";
 
 interface StatItem {
   label: string;
@@ -109,33 +111,91 @@ export function AdminDashboardStats({ stats, isLoading = false }: AdminDashboard
   const statItems = Object.values(mergedStats);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+    <motion.div 
+      className="grid grid-cols-1 md:grid-cols-4 gap-6"
+      variants={staggerContainer}
+      initial="hidden"
+      animate="visible"
+    >
       {statItems.map((stat, index) => (
-        <div key={index} className="bg-white p-6 rounded-lg shadow-sm">
+        <motion.div 
+          key={index} 
+          className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+          variants={staggerItem}
+          whileHover={{ 
+            y: -5,
+            transition: { type: "spring", stiffness: 300 }
+          }}
+        >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">{stat.label}</p>
-              <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
+              <motion.p 
+                className="text-sm font-medium text-gray-500"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 + index * 0.1 }}
+              >
+                {stat.label}
+              </motion.p>
+              <motion.p 
+                className="text-2xl font-bold text-gray-800"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ 
+                  delay: 0.3 + index * 0.1,
+                  type: "spring",
+                  stiffness: 300
+                }}
+              >
+                {stat.value}
+              </motion.p>
             </div>
-            <div className={`p-3 rounded-full ${stat.bgColor} ${stat.color}`}>
+            <motion.div 
+              className={`p-3 rounded-full ${stat.bgColor} ${stat.color}`}
+              whileHover={{ 
+                scale: 1.1,
+                rotate: 5,
+                transition: { duration: 0.2 }
+              }}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.3 + index * 0.1 }}
+            >
               <stat.icon className="text-xl" />
-            </div>
+            </motion.div>
           </div>
-          <div className="mt-2 flex items-center text-sm">
+          <motion.div 
+            className="mt-2 flex items-center text-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 + index * 0.1 }}
+          >
             <span className={`flex items-center ${
               stat.change.isPositive ? "text-green-600" : "text-red-600"
             }`}>
-              <ArrowUp
-                className={`h-3 w-3 mr-1 ${
-                  !stat.change.isPositive ? "rotate-180" : ""
-                }`}
-              />
+              <motion.div
+                animate={{ 
+                  y: [0, stat.change.isPositive ? -3 : 3, 0],
+                }}
+                transition={{ 
+                  repeat: Infinity, 
+                  repeatType: "reverse", 
+                  duration: 1.5,
+                  repeatDelay: 2
+                }}
+              >
+                <ArrowUp
+                  className={`h-3 w-3 mr-1 ${
+                    !stat.change.isPositive ? "rotate-180" : ""
+                  }`}
+                />
+              </motion.div>
               {stat.change.value}%
             </span>
             <span className="text-gray-500 ml-2">{stat.change.period}</span>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 }
