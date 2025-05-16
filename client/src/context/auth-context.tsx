@@ -431,13 +431,20 @@ const mergeWithLocalProfile = (serverUser: User | null): User | null => {
     const storedProfile = JSON.parse(storedProfileJSON);
     const storedProfilePicture = localStorage.getItem('profilePicture');
     
+    // DEBUG: Log the actual role from server and local storage
+    console.log("Server user role:", serverUser.role);
+    console.log("Local profile:", storedProfile);
+    
     // Create a merged user object with local changes overriding server data
+    // IMPORTANT: We should NOT override the role from the server
     return {
       ...serverUser,
       firstName: storedProfile.firstName || serverUser.firstName,
       lastName: storedProfile.lastName || serverUser.lastName,
       email: storedProfile.email || serverUser.email,
-      profilePicture: storedProfilePicture || storedProfile.profilePicture || serverUser.profilePicture
+      profilePicture: storedProfilePicture || storedProfile.profilePicture || serverUser.profilePicture,
+      // Make sure we keep the correct role from the server
+      role: serverUser.role
     };
   } catch (e) {
     console.error('Error merging local profile data:', e);
