@@ -480,6 +480,32 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Delete a user
+  async deleteUser(id: number): Promise<boolean> {
+    try {
+      console.log('Storage: Attempting to delete user with ID:', id);
+      
+      // Use transaction to ensure atomicity
+      const result = await db.transaction(async (tx) => {
+        // First, delete related data
+        await tx.delete(messages).where(eq(messages.userId, id));
+        await tx.delete(activities).where(eq(activities.userId, id));
+        await tx.delete(files).where(eq(files.userId, id));
+        
+        // Delete the user
+        const deleteResult = await tx.delete(users).where(eq(users.id, id));
+        
+        return deleteResult.rowCount > 0;
+      });
+      
+      console.log('Storage: User deleted successfully:', id);
+      return result;
+    } catch (error) {
+      console.error('Storage: Error in deleteUser:', error);
+      return false;
+    }
+  }
+  
   // Projects
   async getProject(id: number): Promise<Project | undefined> {
     const [project] = await db.select().from(projects).where(eq(projects.id, id));
