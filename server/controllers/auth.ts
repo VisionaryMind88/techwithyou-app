@@ -392,22 +392,47 @@ export function registerAuthRoutes(app: Express) {
   // Update user profile
   app.patch("/api/auth/update-profile", async (req: AuthRequest, res: Response) => {
     try {
-      if (!req.user) {
+      console.log('PATCH /api/auth/update-profile route accessed, session details:', {
+        sessionExists: !!req.session,
+        sessionId: req.sessionID,
+        sessionUserId: req.session?.userId,
+        hasUser: !!req.user
+      });
+      
+      // Try to get user from session if req.user is not set
+      let userId: number;
+      
+      if (!req.user && req.session?.userId) {
+        console.log(`No req.user but found userId ${req.session.userId} in session, looking up...`);
+        const sessionUser = await storage.getUser(req.session.userId);
+        if (sessionUser) {
+          console.log('Found user via session userId:', sessionUser.email);
+          req.user = sessionUser;
+          userId = sessionUser.id;
+        } else {
+          console.log('No user found for session userId:', req.session.userId);
+          return res.status(401).json({ message: 'Authentication required' });
+        }
+      } else if (req.user) {
+        userId = req.user.id;
+      } else {
         return res.status(401).json({ message: 'Authentication required' });
       }
       
       const { firstName, lastName, email, profilePicture } = req.body;
       
+      console.log('Updating profile with data:', { firstName, lastName, email, profilePicture });
+      
       // Check if email is being changed and already exists
-      if (email && email !== req.user.email) {
+      if (email && req.user && email !== req.user.email) {
         const existingUser = await storage.getUserByEmail(email);
-        if (existingUser && existingUser.id !== req.user.id) {
+        if (existingUser && existingUser.id !== userId) {
           return res.status(409).json({ message: 'Email already exists' });
         }
       }
       
       // Update user in database
-      const updatedUser = await storage.updateUser(req.user.id, {
+      const updatedUser = await storage.updateUser(userId, {
         firstName,
         lastName,
         email,
@@ -424,7 +449,7 @@ export function registerAuthRoutes(app: Express) {
       await storage.createActivity({
         type: 'profile_updated',
         description: 'User updated their profile',
-        userId: req.user.id,
+        userId: userId,
         projectId: null,
         metadata: { updatedFields: Object.keys(req.body) }
       });
