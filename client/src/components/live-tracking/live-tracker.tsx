@@ -270,51 +270,51 @@ export function LiveTracker() {
               <span>{t('tracking.addNew') || "Add New"}</span>
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="border-blue-100">
             <DialogHeader>
-              <DialogTitle>Add New Tracking Item</DialogTitle>
+              <DialogTitle className="text-blue-700">{t('tracking.addNewTitle') || "Add New Tracking Item"}</DialogTitle>
               <DialogDescription>
-                Create a new tracking item for your clients to monitor.
+                {t('tracking.addNewDescription') || "Create a new tracking item for your clients to monitor."}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreateSubmit}>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-2">
-                  <Label htmlFor="name" className="col-span-4">
-                    Name
+                  <Label htmlFor="name" className="col-span-4 text-blue-700">
+                    {t('tracking.formName') || "Name"}
                   </Label>
                   <Input
                     id="name"
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className="col-span-4"
+                    className="col-span-4 focus-visible:ring-blue-500 border-blue-100"
                     required
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-2">
-                  <Label htmlFor="type" className="col-span-4">
-                    Type
+                  <Label htmlFor="type" className="col-span-4 text-blue-700">
+                    {t('tracking.formType') || "Type"}
                   </Label>
                   <Select 
                     name="type" 
                     value={formData.type} 
                     onValueChange={(value) => handleSelectChange("type", value)}
                   >
-                    <SelectTrigger className="col-span-4">
-                      <SelectValue placeholder="Select type" />
+                    <SelectTrigger className="col-span-4 border-blue-100 focus:ring-blue-500">
+                      <SelectValue placeholder={t('tracking.selectType') || "Select type"} />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="website">Website</SelectItem>
-                      <SelectItem value="api">API</SelectItem>
-                      <SelectItem value="service">Service</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                    <SelectContent className="border-blue-100">
+                      <SelectItem value="website">{t('tracking.typeWebsite') || "Website"}</SelectItem>
+                      <SelectItem value="api">{t('tracking.typeAPI') || "API"}</SelectItem>
+                      <SelectItem value="service">{t('tracking.typeService') || "Service"}</SelectItem>
+                      <SelectItem value="other">{t('tracking.typeOther') || "Other"}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-2">
-                  <Label htmlFor="url" className="col-span-4">
-                    URL
+                  <Label htmlFor="url" className="col-span-4 text-blue-700">
+                    {t('tracking.formUrl') || "URL"}
                   </Label>
                   <Input
                     id="url"
@@ -322,20 +322,20 @@ export function LiveTracker() {
                     type="url"
                     value={formData.url}
                     onChange={handleInputChange}
-                    className="col-span-4"
+                    className="col-span-4 focus-visible:ring-blue-500 border-blue-100"
                     required
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-2">
-                  <Label htmlFor="description" className="col-span-4">
-                    Description
+                  <Label htmlFor="description" className="col-span-4 text-blue-700">
+                    {t('tracking.formDescription') || "Description"}
                   </Label>
                   <Input
                     id="description"
                     name="description"
                     value={formData.description}
                     onChange={handleInputChange}
-                    className="col-span-4"
+                    className="col-span-4 focus-visible:ring-blue-500 border-blue-100"
                   />
                 </div>
                 <div className="flex items-center gap-2">
@@ -343,19 +343,24 @@ export function LiveTracker() {
                     id="isActive"
                     checked={formData.isActive}
                     onCheckedChange={(checked) => handleSwitchChange("isActive", checked)}
+                    className="data-[state=checked]:bg-blue-600"
                   />
-                  <Label htmlFor="isActive">Active</Label>
+                  <Label htmlFor="isActive" className="text-blue-700">{t('tracking.active') || "Active"}</Label>
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" disabled={createMutation.isPending}>
+                <Button 
+                  type="submit" 
+                  disabled={createMutation.isPending}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
                   {createMutation.isPending ? (
                     <>
                       <CircleDashed className="mr-2 h-4 w-4 animate-spin" />
-                      Creating...
+                      {t('tracking.creating') || "Creating..."}
                     </>
                   ) : (
-                    "Create"
+                    t('tracking.create') || "Create"
                   )}
                 </Button>
               </DialogFooter>
