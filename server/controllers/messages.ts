@@ -216,7 +216,30 @@ export function registerMessageRoutes(app: Express) {
   // Create a new message
   app.post("/api/messages", async (req: AuthRequest, res: Response) => {
     try {
+      console.log('Message POST received, debug info:', {
+        headers: req.headers,
+        sessionId: req.sessionID,
+        hasSession: !!req.session,
+        hasUser: !!req.user,
+        userId: req.session?.userId
+      });
+      
+      // Special handling - check if we can get the user from session if not already on request
+      if (!req.user && req.session?.userId) {
+        console.log('No req.user but found userId in session, looking up user');
+        try {
+          const user = await storage.getUser(req.session.userId);
+          if (user) {
+            console.log('Found user via session userId:', user.email);
+            req.user = user;
+          }
+        } catch (err) {
+          console.error('Error looking up user from session userId:', err);
+        }
+      }
+      
       if (!req.user) {
+        console.log('User authentication failed for message creation');
         return res.status(401).json({ message: 'Authentication required' });
       }
       
@@ -224,6 +247,18 @@ export function registerMessageRoutes(app: Express) {
         ...req.body,
         senderId: req.user.id
       };
+      
+      // Force save session before proceeding to ensure we don't lose the session
+      await new Promise<void>((resolve) => {
+        req.session.save((err) => {
+          if (err) {
+            console.error('Error saving session during message creation:', err);
+          } else {
+            console.log('Session saved successfully during message creation');
+          }
+          resolve();
+        });
+      });
       
       // Validate message data
       const validationResult = insertMessageSchema.safeParse(messageData);
@@ -262,6 +297,7 @@ export function registerMessageRoutes(app: Express) {
         }
       };
       
+      console.log('Message created successfully:', newMessage.id);
       res.status(201).json(messageWithSender);
     } catch (error) {
       console.error('Create message error:', error);

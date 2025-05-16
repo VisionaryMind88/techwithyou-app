@@ -12,11 +12,15 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  // Make sure we're always sending session cookies
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers: data ? { 
+      "Content-Type": "application/json",
+      "X-Requested-With": "XMLHttpRequest" // Add this to help identify AJAX requests
+    } : { "X-Requested-With": "XMLHttpRequest" },
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
+    credentials: "include", // Always include credentials
   });
 
   await throwIfResNotOk(res);

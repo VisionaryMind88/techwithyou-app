@@ -99,18 +99,42 @@ export default function MessagesPage() {
         isRead: false
       };
       
-      // Using fetch directly with credentials to ensure session cookies are sent
-      const response = await fetch('/api/messages', {
+      // First verify user is still authenticated
+      const authCheck = await fetch('/api/auth/user', {
+        credentials: 'include'
+      });
+      
+      if (!authCheck.ok) {
+        // Refresh the page to trigger a proper login redirect
+        window.location.reload();
+        return;
+      }
+      
+      // Send the message
+      const messageResponse = await fetch('/api/messages', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-Requested-By': 'message-form' // Custom header to identify the request
         },
         body: JSON.stringify(messageData),
         credentials: 'include'
       });
       
-      if (!response.ok) {
-        throw new Error(`Error sending message: ${response.statusText}`);
+      if (!messageResponse.ok) {
+        if (messageResponse.status === 401) {
+          // If unauthorized, reload to properly redirect to login
+          toast({
+            title: "Session expired",
+            description: "Your session has expired. Please log in again.",
+            variant: "destructive"
+          });
+          
+          // Short delay before reload to allow toast to be seen
+          setTimeout(() => window.location.reload(), 1500);
+          return;
+        }
+        throw new Error(`Error sending message: ${messageResponse.statusText}`);
       }
       
       // Invalidate queries to refresh the messages
