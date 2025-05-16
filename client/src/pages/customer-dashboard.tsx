@@ -9,10 +9,11 @@ import { Project, Message, User, Activity as BaseActivity } from "@shared/schema
 import { useAuth } from "@/context/auth-context";
 
 // Enhanced Activity interface that matches our extended schema
-interface Activity extends Omit<BaseActivity, 'referenceId' | 'referenceType' | 'isRead'> {
+interface Activity extends Omit<BaseActivity, 'referenceId' | 'referenceType' | 'isRead' | 'createdAt'> {
   referenceId: number | null;
   referenceType: string | null;
   isRead: boolean;
+  createdAt: string;
 }
 
 import { OnboardingTour, customerTourSteps } from "@/components/onboarding-tour";
@@ -39,6 +40,22 @@ export default function CustomerDashboard() {
       setShowTour(true);
     }
   }, [user]);
+  
+  // Handle clicks outside notification dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      // Check if click is outside the notification dropdown
+      if (isNotificationsOpen && !target.closest('.notifications-dropdown')) {
+        setIsNotificationsOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isNotificationsOpen]);
 
   // Fetch user's projects
   const { 
@@ -61,7 +78,8 @@ export default function CustomerDashboard() {
   // Fetch user's activities/notifications
   const {
     data: activities = [],
-    isLoading: isLoadingActivities
+    isLoading: isLoadingActivities,
+    refetch: refetchActivities
   } = useQuery<Activity[]>({
     queryKey: ['/api/activities/user'],
     enabled: !!user?.id && user?.role === "customer"
@@ -104,7 +122,7 @@ export default function CustomerDashboard() {
     try {
       await apiRequest('PATCH', `/api/activities/${activityId}/read`);
       // Update the local state
-      queryClient.invalidateQueries({ queryKey: ['/api/activities/user'] });
+      await refetchActivities();
       toast({
         title: "Notification marked as read",
         variant: "default",
@@ -167,7 +185,7 @@ export default function CustomerDashboard() {
                 </button>
                 
                 {/* Activities/Notifications Dropdown */}
-                <div className="relative">
+                <div className="relative notifications-dropdown">
                   <button 
                     className="text-gray-500 hover:text-gray-700 focus:outline-none relative"
                     onClick={() => setIsNotificationsOpen(prev => !prev)}
@@ -181,7 +199,7 @@ export default function CustomerDashboard() {
                   </button>
                   
                   {isNotificationsOpen && (
-                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-50 max-h-96 overflow-auto">
+                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-50 max-h-96 overflow-auto notifications-dropdown">
                       <div className="px-4 py-2 border-b border-gray-100">
                         <h3 className="text-sm font-semibold text-gray-700">Notifications</h3>
                       </div>
