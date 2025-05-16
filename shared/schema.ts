@@ -109,6 +109,7 @@ export const messages = pgTable("messages", {
   content: text("content").notNull(),
   projectId: integer("project_id").notNull(),
   senderId: integer("sender_id").notNull(),
+  recipientId: integer("recipient_id"), // For direct messages
   isRead: boolean("is_read").notNull().default(false),
   attachments: jsonb("attachments"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -118,6 +119,7 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   content: true,
   projectId: true,
   senderId: true,
+  recipientId: true,
   attachments: true,
 });
 

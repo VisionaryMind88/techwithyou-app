@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Sidebar } from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
@@ -7,13 +7,22 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Menu, Bell, Search, Mail, UserPlus, Filter, MoreHorizontal, Eye, Edit, Trash2 } from "lucide-react";
+import { Menu, Bell, Search, Mail, UserPlus, Filter, MoreHorizontal, Eye, Edit, Trash2, MessageSquare } from "lucide-react";
 import { User } from "@shared/schema";
 import { useAuth } from "@/context/auth-context";
 import { FloatingActionMenu } from "@/components/mobile/floating-action-menu";
 import { BottomNavigation } from "@/components/mobile/bottom-navigation";
 import { MobileHeader } from "@/components/mobile/mobile-header";
 import { UserForm } from "@/components/admin/user-form";
+import { DirectChatModule } from "@/components/admin/direct-chat-module";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription, 
+  DialogFooter
+} from "@/components/ui/dialog";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +40,10 @@ export default function UsersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRole, setFilterRole] = useState<string | null>(null);
   const [isUserFormOpen, setIsUserFormOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isEditingUser, setIsEditingUser] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
@@ -96,30 +109,44 @@ export default function UsersPage() {
     return matchesSearch && matchesRole;
   });
 
-  const handleViewUser = (userId: number) => {
-    // View user details 
+  const handleViewUser = (user: User) => {
+    setSelectedUser(user);
     toast({
       title: "View user",
-      description: `Viewing user ${userId}`,
+      description: `Viewing user ${user.email}`,
     });
   };
 
-  const handleEditUser = (userId: number) => {
-    // Edit user
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user);
+    setIsEditingUser(true);
     toast({
       title: "Edit user",
-      description: `Editing user ${userId}`,
+      description: `Editing user ${user.email}`,
     });
+  };
+
+  const handleStartChat = (user: User) => {
+    setSelectedUser(user);
+    setIsChatOpen(true);
   };
 
   const handleDeleteUser = async (userId: number) => {
+    setSelectedUser(users?.find(u => u.id === userId) || null);
+    setIsDeleteConfirmOpen(true);
+  };
+  
+  const confirmDeleteUser = async () => {
+    if (!selectedUser) return;
+    
     try {
-      await apiRequest("DELETE", `/api/users/${userId}`);
+      await apiRequest("DELETE", `/api/users/${selectedUser.id}`);
       queryClient.invalidateQueries({ queryKey: ["/api/users/admin"] });
       toast({
         title: "User deleted",
         description: "The user has been deleted successfully.",
       });
+      setIsDeleteConfirmOpen(false);
     } catch (error) {
       toast({
         title: "Error deleting user",
@@ -270,13 +297,17 @@ export default function UsersPage() {
                               <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => handleViewUser(user.id)}>
+                                <DropdownMenuItem onClick={() => handleViewUser(user)}>
                                   <Eye size={16} className="mr-2" />
                                   View Details
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEditUser(user.id)}>
+                                <DropdownMenuItem onClick={() => handleEditUser(user)}>
                                   <Edit size={16} className="mr-2" />
                                   Edit User
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleStartChat(user)}>
+                                  <MessageSquare size={16} className="mr-2" />
+                                  Direct Message
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
                                   onClick={() => handleDeleteUser(user.id)}
@@ -345,11 +376,55 @@ export default function UsersPage() {
       {/* Mobile Bottom Navigation */}
       <BottomNavigation />
 
-      {/* User Form Modal */}
+      {/* User Form Modal - New User */}
       <UserForm 
         isOpen={isUserFormOpen} 
         onClose={() => setIsUserFormOpen(false)} 
       />
+
+      {/* User Form Modal - Edit User */}
+      {selectedUser && (
+        <UserForm 
+          isOpen={isEditingUser} 
+          user={selectedUser}
+          onClose={() => {
+            setIsEditingUser(false);
+            setSelectedUser(null);
+          }}
+        />
+      )}
+
+      {/* Direct Chat Module */}
+      {selectedUser && (
+        <DirectChatModule 
+          targetUser={selectedUser}
+          isOpen={isChatOpen}
+          onClose={() => {
+            setIsChatOpen(false);
+            setSelectedUser(null);
+          }}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete User</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {selectedUser?.email}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button variant="outline" onClick={() => setIsDeleteConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDeleteUser}>
+              Delete
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { Express, Response } from "express";
 import { storage } from "../storage";
-import { insertMessageSchema, activities } from "@shared/schema";
+import { insertMessageSchema, activities, messages } from "@shared/schema";
 import { AuthRequest } from "../middleware/auth";
 import { db } from "../db";
 import { eq, desc, and, or } from "drizzle-orm";
