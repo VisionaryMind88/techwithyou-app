@@ -7,16 +7,27 @@ import { AdminMessagesList } from "@/components/admin/messages-list";
 import { Sidebar } from "@/components/sidebar";
 import { ChatModule } from "@/components/chat-module";
 import { Button } from "@/components/ui/button";
-import { Menu, Bell } from "lucide-react";
+import { Menu, Bell, MessageSquare, ActivityIcon } from "lucide-react";
 import { OnboardingTour, adminTourSteps } from "@/components/onboarding-tour";
 import { useAuth } from "@/context/auth-context";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Project, User, Message, Activity } from "@shared/schema";
+import { Project, User, Message, Activity as BaseActivity } from "@shared/schema";
+import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
+
+// Enhanced Activity interface that matches our extended schema
+interface Activity extends Omit<BaseActivity, 'referenceId' | 'referenceType' | 'isRead' | 'createdAt'> {
+  referenceId: number | null;
+  referenceType: string | null;
+  isRead: boolean;
+  createdAt: string;
+}
 
 export default function AdminDashboard() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [selectedProjectName, setSelectedProjectName] = useState<string>("");
   const [showTour, setShowTour] = useState(false);
@@ -30,6 +41,22 @@ export default function AdminDashboard() {
       setShowTour(true);
     }
   }, [user]);
+  
+  // Handle clicks outside notification dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      // Check if click is outside the notification dropdown
+      if (isNotificationsOpen && !target.closest('.notifications-dropdown')) {
+        setIsNotificationsOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isNotificationsOpen]);
   
   // Project handlers
   const handleReviewProject = (projectId: number) => {
