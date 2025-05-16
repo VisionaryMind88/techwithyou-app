@@ -598,25 +598,36 @@ export default function CustomerDashboard() {
           {
             icon: <Plus size={20} />,
             label: "New Project",
-            onClick: () => setIsProjectModalOpen(true),
+            onClick: () => setIsProjectFormOpen(true),
             color: "bg-blue-500 text-white"
           },
           {
             icon: <MessageSquare size={20} />,
             label: "Messages",
-            onClick: () => setLocation('/messages'),
+            onClick: () => {
+              // Set selected project for chat if available, otherwise open messages page
+              if (selectedProject) {
+                setIsChatOpen(true);
+              } else {
+                window.location.href = '/messages';
+              }
+            },
             color: "bg-green-500 text-white"
           },
           {
             icon: <Upload size={20} />,
             label: "Upload Files",
-            onClick: () => setLocation('/projects'),
+            onClick: () => {
+              window.location.href = '/projects';
+            },
             color: "bg-purple-500 text-white"
           },
           {
             icon: <Settings size={20} />,
             label: "Settings",
-            onClick: () => setLocation('/settings'),
+            onClick: () => {
+              window.location.href = '/settings';
+            },
             color: "bg-gray-700 text-white"
           }
         ]}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { AdminDashboardStats } from "@/components/admin/dashboard-stats";
 import { ProjectTable } from "@/components/admin/project-table";
 import { ActivityList } from "@/components/admin/activity-list";
@@ -11,13 +12,16 @@ import { Sidebar } from "@/components/sidebar";
 import { ChatModule } from "@/components/chat-module";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Menu, Bell, MessageSquare, ActivityIcon, BarChart } from "lucide-react";
+import { Menu, Bell, MessageSquare, ActivityIcon, BarChart, Plus, Settings, Users, FileText } from "lucide-react";
 import { RiFolderLine, RiTimeLine, RiUserLine, RiChat3Line } from "react-icons/ri";
 import { OnboardingTour, adminTourSteps } from "@/components/onboarding-tour";
 import { useAuth } from "@/context/auth-context";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Project, User, Message, Activity as BaseActivity } from "@shared/schema";
+import { FloatingActionMenu } from "@/components/mobile/floating-action-menu";
+import { MobileHeader } from "@/components/mobile/mobile-header";
+import { BottomNavigation } from "@/components/mobile/bottom-navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 
@@ -507,6 +511,49 @@ export default function AdminDashboard() {
         onComplete={() => setShowTour(false)}
         userRole="admin"
       />
+      
+      {/* Quick Action Floating Menu */}
+      <FloatingActionMenu 
+        items={[
+          {
+            icon: <Plus size={20} />,
+            label: "New Project",
+            onClick: () => {
+              window.location.href = '/projects/new';
+            },
+            color: "bg-blue-500 text-white"
+          },
+          {
+            icon: <MessageSquare size={20} />,
+            label: "Messages",
+            onClick: () => {
+              window.location.href = '/messages';
+            },
+            color: "bg-green-500 text-white"
+          },
+          {
+            icon: <Users size={20} />,
+            label: "Users",
+            onClick: () => {
+              window.location.href = '/users';
+            },
+            color: "bg-purple-500 text-white"
+          },
+          {
+            icon: <Settings size={20} />,
+            label: "Settings",
+            onClick: () => {
+              window.location.href = '/settings';
+            },
+            color: "bg-gray-700 text-white"
+          }
+        ]}
+        position="bottom-right"
+        userRole="admin"
+      />
+      
+      {/* Mobile Bottom Navigation */}
+      <BottomNavigation />
     </div>
   );
 }

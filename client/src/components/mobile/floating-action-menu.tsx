@@ -36,11 +36,11 @@ export function FloatingActionMenu({
     "bottom-left": "left-4 bottom-20"
   };
 
-  // Animation variants
+  // Animation variants with enhanced bounce effect
   const containerVariants = {
     open: { 
       transition: { 
-        staggerChildren: 0.07,
+        staggerChildren: 0.08,
         delayChildren: 0.1
       } 
     },
@@ -59,8 +59,10 @@ export function FloatingActionMenu({
       scale: 1,
       transition: {
         type: "spring",
-        stiffness: 300,
-        damping: 20
+        stiffness: 400,
+        damping: 15,
+        mass: 1.2,  // Slightly increased mass for more bounce
+        velocity: 2 // Initial velocity for extra bounce
       }
     },
     closed: { 
@@ -81,8 +83,10 @@ export function FloatingActionMenu({
       rotate: isOpen ? 0 : 45,
       transition: {
         type: "spring",
-        stiffness: 400,
-        damping: 10
+        stiffness: 500,  // Increased stiffness
+        damping: 10,
+        mass: 1.2,      // Added mass for more bounce
+        velocity: 2     // Initial velocity
       }
     },
     tap: { 
@@ -95,6 +99,16 @@ export function FloatingActionMenu({
     },
     initial: {
       rotate: isOpen ? 0 : 45
+    },
+    bounce: {
+      y: [0, -10, 0],  // Bounce up and down
+      transition: {
+        duration: 0.5,
+        times: [0, 0.5, 1],
+        repeat: 3,
+        repeatType: "loop" as const,
+        ease: "easeInOut"
+      }
     }
   };
 
@@ -139,11 +153,11 @@ export function FloatingActionMenu({
         )}
       </AnimatePresence>
 
-      {/* Toggle Button */}
+      {/* Toggle Button with bounce animation effect */}
       <motion.button
         className={cn(
           "flex items-center justify-center rounded-full w-14 h-14 shadow-lg focus:outline-none",
-          isOpen ? "bg-red-500" : "bg-blue-500",
+          isOpen ? "bg-red-500" : userRole === "admin" ? "bg-purple-600" : "bg-blue-500",
           "text-white"
         )}
         onClick={toggleMenu}
@@ -151,7 +165,7 @@ export function FloatingActionMenu({
         initial="initial"
         whileHover="hover"
         whileTap="tap"
-        animate={isOpen ? { rotate: 0 } : { rotate: 0 }}
+        animate={isOpen ? { rotate: 0 } : "bounce"}
       >
         {isOpen ? <X size={24} /> : <Plus size={24} />}
       </motion.button>
