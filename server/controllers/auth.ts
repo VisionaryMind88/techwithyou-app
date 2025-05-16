@@ -389,6 +389,55 @@ export function registerAuthRoutes(app: Express) {
     }
   });
   
+  // Update user profile
+  app.patch("/api/auth/update-profile", async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
+      const { firstName, lastName, email, profilePicture } = req.body;
+      
+      // Check if email is being changed and already exists
+      if (email && email !== req.user.email) {
+        const existingUser = await storage.getUserByEmail(email);
+        if (existingUser && existingUser.id !== req.user.id) {
+          return res.status(409).json({ message: 'Email already exists' });
+        }
+      }
+      
+      // Update user in database
+      const updatedUser = await storage.updateUser(req.user.id, {
+        firstName,
+        lastName,
+        email,
+        profilePicture
+      });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      console.log('User profile updated successfully:', updatedUser.email);
+      
+      // Create activity for profile update
+      await storage.createActivity({
+        type: 'profile_updated',
+        description: 'User updated their profile',
+        userId: req.user.id,
+        projectId: null,
+        metadata: { updatedFields: Object.keys(req.body) }
+      });
+      
+      // Return updated user without password
+      const { password: _, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error('Update profile error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
   // Logout user
   app.post("/api/auth/logout", async (req: AuthRequest, res: Response) => {
     try {
