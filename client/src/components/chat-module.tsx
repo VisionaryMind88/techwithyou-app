@@ -197,6 +197,7 @@ export function ChatModule({
   const [messages, setMessages] = useState<Array<Message & { sender: User }>>(initialMessages);
   const [newMessage, setNewMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   
@@ -241,6 +242,7 @@ export function ChatModule({
     if (!newMessage.trim() || !user?.id || !projectId) return;
     
     setIsSubmitting(true);
+    setStatusMessage("Sending message...");
     
     try {
       const messageData: InsertMessage = {
@@ -267,13 +269,25 @@ export function ChatModule({
       });
       
       setNewMessage("");
+      setStatusMessage("Message sent successfully");
+      
+      // Clear status message after a short delay
+      setTimeout(() => {
+        setStatusMessage("");
+      }, 5000);
     } catch (error) {
       console.error("Error sending message:", error);
+      setStatusMessage("Failed to send message. Please try again.");
       toast({
         title: "Failed to send message",
         description: "Please try again",
         variant: "destructive"
       });
+      
+      // Clear error status message after a longer delay
+      setTimeout(() => {
+        setStatusMessage("");
+      }, 8000);
     } finally {
       setIsSubmitting(false);
     }
@@ -360,21 +374,31 @@ export function ChatModule({
         </div>
         
         {/* Message Input */}
-        <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
+        <div 
+          className="px-4 py-3 bg-gray-50 border-t border-gray-200"
+          role="region" 
+          aria-label="Message composition area"
+        >
+          <div id="message-input-hint" className="sr-only">
+            Type your message in the text field below and press Enter or use the Send button to send it.
+          </div>
+
           <form 
             onSubmit={(e) => {
               e.preventDefault();
               handleSendMessage();
             }}
             aria-label="Message input form"
+            className="relative"
           >
             <div className="flex items-center">
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="text-gray-500 hover:text-gray-700 p-1 h-auto"
+                className="text-gray-500 hover:text-gray-700 focus:ring-2 focus:ring-primary-500 p-1 h-auto"
                 type="button"
                 aria-label="Attach file"
+                id="attach-button"
               >
                 <Paperclip className="h-5 w-5" aria-hidden="true" />
                 <span className="sr-only">Attach file</span>
@@ -387,17 +411,19 @@ export function ChatModule({
                 onKeyDown={handleKeyPress}
                 placeholder="Type a message..."
                 className="flex-1 mx-2"
-                aria-label="Type a message"
+                aria-label="Message content"
+                aria-required="true"
                 required
                 aria-describedby="message-input-hint"
                 name="message"
+                autoComplete="off"
               />
               
               <Button 
                 size="sm" 
                 type="submit"
                 disabled={isSubmitting || !newMessage.trim()}
-                className="p-2 h-auto"
+                className="p-2 h-auto focus:ring-2 focus:ring-primary-500"
                 aria-label="Send message"
               >
                 <Send className="h-4 w-4" aria-hidden="true" />
