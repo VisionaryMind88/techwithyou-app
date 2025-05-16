@@ -91,15 +91,15 @@ function Router() {
   if (user?.role === "customer") {
     return (
       <Switch>
-        <Route path="/" component={CustomerDashboard} />
-        <Route path="/projects" component={ProjectsPage} />
         <Route path="/projects/:id" component={ProjectDetail} />
+        <Route path="/projects" component={ProjectsPage} />
         <Route path="/messages" component={MessagesPage} />
-        <Route path="/tracking" component={TrackingPage} />
         <Route path="/tracking/view" component={TrackingViewPage} />
+        <Route path="/tracking" component={TrackingPage} />
         <Route path="/settings" component={SettingsPage} />
         <Route path="/payment-checkout" component={PaymentCheckoutPage} />
         <Route path="/payment-success" component={PaymentSuccessPage} />
+        <Route path="/" component={CustomerDashboard} />
         <Route component={NotFound} />
       </Switch>
     );
@@ -108,16 +108,16 @@ function Router() {
   if (user?.role === "admin") {
     return (
       <Switch>
-        <Route path="/" component={AdminDashboard} />
-        <Route path="/projects" component={ProjectsPage} />
         <Route path="/projects/:id" component={ProjectDetail} />
+        <Route path="/projects" component={ProjectsPage} />
         <Route path="/messages" component={MessagesPage} />
-        <Route path="/tracking" component={TrackingPage} />
         <Route path="/tracking/view" component={TrackingViewPage} />
+        <Route path="/tracking" component={TrackingPage} />
         <Route path="/settings" component={SettingsPage} />
         <Route path="/users" component={UsersPage} />
         <Route path="/payment-checkout" component={PaymentCheckoutPage} />
         <Route path="/payment-success" component={PaymentSuccessPage} />
+        <Route path="/" component={AdminDashboard} />
         <Route component={NotFound} />
       </Switch>
     );
