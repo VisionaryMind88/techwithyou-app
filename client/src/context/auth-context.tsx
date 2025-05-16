@@ -143,6 +143,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(userData);
       
       console.log("Login successful:", userData);
+      
+      // Make sure to redirect to the Dashboard after successful login
+      window.location.href = '/';
     } catch (error: any) {
       console.error('Sign in error:', error);
       const errorMessage = error.message || 'Failed to sign in. Please try again.';
