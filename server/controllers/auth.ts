@@ -431,32 +431,44 @@ export function registerAuthRoutes(app: Express) {
         }
       }
       
-      // Update user in database
-      const updatedUser = await storage.updateUser(userId, {
-        firstName,
-        lastName,
-        email,
-        profilePicture
-      });
+      // Prepare update data, only include fields that were provided
+      const updateData: Partial<User> = {};
+      if (firstName !== undefined) updateData.firstName = firstName;
+      if (lastName !== undefined) updateData.lastName = lastName;
+      if (email !== undefined) updateData.email = email;
+      if (profilePicture !== undefined) updateData.profilePicture = profilePicture;
       
-      if (!updatedUser) {
-        return res.status(404).json({ message: 'User not found' });
+      console.log('Filtered update data:', updateData);
+      
+      try {
+        // Update user in database
+        const updatedUser = await storage.updateUser(userId, updateData);
+        
+        if (!updatedUser) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+        
+        console.log('User profile updated successfully:', updatedUser.email);
+        
+        // Create activity for profile update
+        await storage.createActivity({
+          type: 'profile_updated',
+          description: 'User updated their profile',
+          userId: userId,
+          projectId: null,
+          metadata: { updatedFields: Object.keys(updateData) }
+        });
+        
+        // Return updated user without password
+        const { password: _, ...userWithoutPassword } = updatedUser;
+        res.json(userWithoutPassword);
+      } catch (updateError) {
+        console.error('Error updating user:', updateError);
+        res.status(500).json({ 
+          message: 'Failed to update profile', 
+          error: updateError.message 
+        });
       }
-      
-      console.log('User profile updated successfully:', updatedUser.email);
-      
-      // Create activity for profile update
-      await storage.createActivity({
-        type: 'profile_updated',
-        description: 'User updated their profile',
-        userId: userId,
-        projectId: null,
-        metadata: { updatedFields: Object.keys(req.body) }
-      });
-      
-      // Return updated user without password
-      const { password: _, ...userWithoutPassword } = updatedUser;
-      res.json(userWithoutPassword);
     } catch (error) {
       console.error('Update profile error:', error);
       res.status(500).json({ message: 'Internal server error' });
