@@ -13,6 +13,7 @@ import { useAuth } from "@/context/auth-context";
 import { FloatingActionMenu } from "@/components/mobile/floating-action-menu";
 import { BottomNavigation } from "@/components/mobile/bottom-navigation";
 import { MobileHeader } from "@/components/mobile/mobile-header";
+import { UserForm } from "@/components/admin/user-form";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +30,7 @@ export default function UsersPage() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRole, setFilterRole] = useState<string | null>(null);
+  const [isUserFormOpen, setIsUserFormOpen] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
@@ -158,7 +160,7 @@ export default function UsersPage() {
               <h1 className="text-2xl font-bold text-gray-900">Users</h1>
               <p className="text-gray-600">Manage all registered users in the system</p>
             </div>
-            <Button className="mt-3 md:mt-0" onClick={() => toast({ title: "Feature coming soon", description: "User creation will be available soon." })}>
+            <Button className="mt-3 md:mt-0" onClick={() => setIsUserFormOpen(true)}>
               <UserPlus size={16} className="mr-2" />
               Add User
             </Button>
@@ -312,10 +314,7 @@ export default function UsersPage() {
             icon: <UserPlus size={20} />,
             label: "Add User",
             onClick: () => {
-              toast({ 
-                title: "Feature coming soon", 
-                description: "User creation will be available soon." 
-              });
+              setIsUserFormOpen(true);
             },
             color: "bg-blue-500 text-white"
           },
@@ -345,6 +344,12 @@ export default function UsersPage() {
       
       {/* Mobile Bottom Navigation */}
       <BottomNavigation />
+
+      {/* User Form Modal */}
+      <UserForm 
+        isOpen={isUserFormOpen} 
+        onClose={() => setIsUserFormOpen(false)} 
+      />
     </div>
   );
 }
