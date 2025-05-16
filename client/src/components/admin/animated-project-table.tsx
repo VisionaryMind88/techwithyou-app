@@ -68,27 +68,30 @@ export function ProjectTable({
           <Button
             size="sm"
             variant="link"
-            className="text-primary-600 hover:text-primary-900"
+            className="text-primary-600 hover:text-primary-900 focus-visible-ring"
             onClick={() => onReview?.(project.id)}
             aria-label={`Review project ${project.name}`}
+            onKeyDown={(e) => e.key === 'Enter' && onReview?.(project.id)}
           >
             Review
           </Button>
           <Button
             size="sm"
             variant="outline"
-            className="text-success border-success hover:bg-green-50"
+            className="text-success border-success hover:bg-green-50 focus-visible-ring"
             onClick={() => onApprove?.(project.id)}
             aria-label={`Approve project ${project.name}`}
+            onKeyDown={(e) => e.key === 'Enter' && onApprove?.(project.id)}
           >
             Approve
           </Button>
           <Button
             size="sm"
             variant="outline"
-            className="text-destructive border-destructive hover:bg-red-50"
+            className="text-destructive border-destructive hover:bg-red-50 focus-visible-ring"
             onClick={() => onReject?.(project.id)}
             aria-label={`Reject project ${project.name}`}
+            onKeyDown={(e) => e.key === 'Enter' && onReject?.(project.id)}
           >
             Reject
           </Button>
@@ -103,6 +106,7 @@ export function ProjectTable({
             variant="ghost" 
             size="icon" 
             aria-label={`Actions for project ${project.name}`}
+            className="focus-visible-ring dropdown-trigger"
           >
             <MoreHorizontal className="h-4 w-4" />
             <span className="sr-only">Actions for project {project.name}</span>
@@ -113,6 +117,8 @@ export function ProjectTable({
             onClick={() => onView?.(project.id)}
             onKeyDown={(e) => e.key === 'Enter' && onView?.(project.id)}
             tabIndex={0}
+            className="focus-visible-ring"
+            aria-label={`View project ${project.name}`}
           >
             View
           </DropdownMenuItem>
@@ -120,6 +126,8 @@ export function ProjectTable({
             onClick={() => onEdit?.(project.id)}
             onKeyDown={(e) => e.key === 'Enter' && onEdit?.(project.id)}
             tabIndex={0}
+            className="focus-visible-ring"
+            aria-label={`Edit project ${project.name}`}
           >
             Edit
           </DropdownMenuItem>
@@ -127,6 +135,8 @@ export function ProjectTable({
             onClick={() => onDelete?.(project.id)}
             onKeyDown={(e) => e.key === 'Enter' && onDelete?.(project.id)}
             tabIndex={0}
+            className="focus-visible-ring"
+            aria-label={`Delete project ${project.name}`}
           >
             Delete
           </DropdownMenuItem>
@@ -221,9 +231,15 @@ export function ProjectTable({
                     delay: index * 0.05,
                     ease: "easeOut"
                   }}
-                  className="border-b hover:bg-muted/50"
+                  className="border-b hover:bg-muted/50 group"
                   tabIndex={0}
                   aria-label={`Project: ${project.name}, Status: ${getStatusStyle(project.status).label}`}
+                  onKeyDown={(e) => {
+                    // Open details on Enter key press
+                    if (e.key === 'Enter' && onView) {
+                      onView(project.id);
+                    }
+                  }}
                 >
                   <TableCell className="font-medium">{project.name}</TableCell>
                   <TableCell>
