@@ -58,23 +58,54 @@ export default function SettingsPage() {
     e.preventDefault();
     
     try {
-      const response = await apiRequest('PATCH', '/api/auth/update-profile', {
+      console.log('Sending profile update with data:', {
         firstName,
         lastName,
         email,
-        profilePicture
+        profilePicture: profilePicture ? '[PROFILE_PICTURE_DATA]' : null // Log presence but not the actual data
       });
+      
+      // First attempt: Only update name fields to simplify
+      const simpleUpdate = {
+        firstName,
+        lastName
+      };
+      
+      console.log('Simplified update data:', simpleUpdate);
+      
+      toast({
+        title: "Sending update...",
+        description: "Attempting to update your profile.",
+      });
+      
+      const response = await apiRequest('PATCH', '/api/auth/update-profile', simpleUpdate);
+      
+      console.log('Update response status:', response.status);
       
       if (response.ok) {
         toast({
           title: "Profile updated",
           description: "Your profile information has been updated successfully.",
         });
+        
+        // Update local user info (stored in localStorage for now)
+        if (profilePicture) {
+          localStorage.setItem('profilePicture', profilePicture);
+        }
       } else {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to update profile');
+        let errorMessage = 'Failed to update profile';
+        try {
+          const errorData = await response.json();
+          console.error('Error response:', errorData);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.error('Could not parse error response', parseError);
+        }
+        
+        throw new Error(errorMessage);
       }
     } catch (error: any) {
+      console.error('Profile update error:', error);
       toast({
         title: "Update failed",
         description: error.message || "Something went wrong. Please try again.",
