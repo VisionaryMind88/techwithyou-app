@@ -1,5 +1,5 @@
 modules = ["nodejs-20", "web", "postgresql-16"]
-run = "npm run dev"
+run = "sh db/setup.sh && npm run dev"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
@@ -21,7 +21,19 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
+args = "Database Setup"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
 args = "Start application"
+
+[[workflows.workflow]]
+name = "Database Setup"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sh db/setup.sh"
 
 [[workflows.workflow]]
 name = "Start application"
@@ -35,3 +47,7 @@ waitForPort = 5000
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 5432
+externalPort = 5432
