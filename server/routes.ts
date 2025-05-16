@@ -472,6 +472,151 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Live Tracking API endpoints
+  app.get('/api/tracking', authMiddleware, async (req, res) => {
+    try {
+      const isAdmin = req.user?.role === 'admin';
+      const trackingItems = isAdmin 
+        ? await storage.getAllTrackingItems()
+        : await storage.getActiveTrackingItems();
+      
+      res.json({ trackingItems });
+    } catch (error: any) {
+      console.error('Error fetching tracking items:', error);
+      res.status(500).json({ message: error.message || 'Failed to fetch tracking items' });
+    }
+  });
+  
+  app.get('/api/tracking/:id', authMiddleware, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid tracking item ID' });
+      }
+      
+      const trackingItem = await storage.getTrackingItem(id);
+      if (!trackingItem) {
+        return res.status(404).json({ message: 'Tracking item not found' });
+      }
+      
+      res.json({ trackingItem });
+    } catch (error: any) {
+      console.error('Error fetching tracking item:', error);
+      res.status(500).json({ message: error.message || 'Failed to fetch tracking item' });
+    }
+  });
+  
+  app.post('/api/tracking', authMiddleware, async (req, res) => {
+    try {
+      // Only admins can create tracking items
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ message: 'Unauthorized: Only admins can create tracking items' });
+      }
+      
+      // Extract required data from request body
+      const { name, url, type, description, key, thumbnailUrl } = req.body;
+      
+      if (!name || !url) {
+        return res.status(400).json({ message: 'Name and URL are required' });
+      }
+      
+      const trackingItemData = {
+        name,
+        url,
+        type: type || 'website',
+        description,
+        key,
+        thumbnailUrl,
+        createdById: req.user.id
+      };
+      
+      const trackingItem = await storage.createTrackingItem(trackingItemData);
+      res.status(201).json({ trackingItem });
+    } catch (error: any) {
+      console.error('Error creating tracking item:', error);
+      res.status(500).json({ message: error.message || 'Failed to create tracking item' });
+    }
+  });
+  
+  app.patch('/api/tracking/:id', authMiddleware, async (req, res) => {
+    try {
+      // Only admins can update tracking items
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ message: 'Unauthorized: Only admins can update tracking items' });
+      }
+      
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid tracking item ID' });
+      }
+      
+      const trackingItem = await storage.getTrackingItem(id);
+      if (!trackingItem) {
+        return res.status(404).json({ message: 'Tracking item not found' });
+      }
+      
+      const updatedTrackingItem = await storage.updateTrackingItem(id, req.body);
+      res.json({ trackingItem: updatedTrackingItem });
+    } catch (error: any) {
+      console.error('Error updating tracking item:', error);
+      res.status(500).json({ message: error.message || 'Failed to update tracking item' });
+    }
+  });
+  
+  app.patch('/api/tracking/:id/toggle', authMiddleware, async (req, res) => {
+    try {
+      // Only admins can toggle tracking item status
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ message: 'Unauthorized: Only admins can toggle tracking item status' });
+      }
+      
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid tracking item ID' });
+      }
+      
+      const trackingItem = await storage.getTrackingItem(id);
+      if (!trackingItem) {
+        return res.status(404).json({ message: 'Tracking item not found' });
+      }
+      
+      const updatedTrackingItem = await storage.toggleTrackingItemStatus(id);
+      res.json({ trackingItem: updatedTrackingItem });
+    } catch (error: any) {
+      console.error('Error toggling tracking item status:', error);
+      res.status(500).json({ message: error.message || 'Failed to toggle tracking item status' });
+    }
+  });
+  
+  app.delete('/api/tracking/:id', authMiddleware, async (req, res) => {
+    try {
+      // Only admins can delete tracking items
+      if (req.user?.role !== 'admin') {
+        return res.status(403).json({ message: 'Unauthorized: Only admins can delete tracking items' });
+      }
+      
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid tracking item ID' });
+      }
+      
+      const trackingItem = await storage.getTrackingItem(id);
+      if (!trackingItem) {
+        return res.status(404).json({ message: 'Tracking item not found' });
+      }
+      
+      const success = await storage.deleteTrackingItem(id);
+      if (success) {
+        res.json({ message: 'Tracking item deleted successfully' });
+      } else {
+        res.status(500).json({ message: 'Failed to delete tracking item' });
+      }
+    } catch (error: any) {
+      console.error('Error deleting tracking item:', error);
+      res.status(500).json({ message: error.message || 'Failed to delete tracking item' });
+    }
+  });
+
   // Register auth routes first (no auth required)
   registerAuthRoutes(app);
   

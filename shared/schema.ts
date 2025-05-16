@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, foreignKey, decimal } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, foreignKey, decimal, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -268,3 +268,38 @@ export type InsertActivity = z.infer<typeof insertActivitySchema>;
 
 export type Payment = typeof payments.$inferSelect;
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+
+// Tracking items schema
+export const trackingItems = pgTable("tracking_items", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  url: varchar("url", { length: 500 }).notNull(),
+  type: varchar("type", { length: 20 }).notNull().default("website"),
+  key: varchar("key", { length: 100 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  createdById: integer("created_by_id").notNull().references(() => users.id),
+  isActive: boolean("is_active").notNull().default(true),
+  description: text("description"),
+  thumbnailUrl: varchar("thumbnail_url", { length: 500 }),
+});
+
+export const insertTrackingItemSchema = createInsertSchema(trackingItems).pick({
+  name: true,
+  url: true,
+  type: true,
+  key: true,
+  description: true,
+  thumbnailUrl: true,
+  createdById: true,
+});
+
+export const trackingItemsRelations = relations(trackingItems, ({ one }) => ({
+  createdBy: one(users, {
+    fields: [trackingItems.createdById],
+    references: [users.id],
+  }),
+}));
+
+export type TrackingItem = typeof trackingItems.$inferSelect;
+export type InsertTrackingItem = z.infer<typeof insertTrackingItemSchema>;

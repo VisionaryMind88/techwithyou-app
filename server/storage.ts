@@ -5,6 +5,7 @@ import {
   messages, 
   activities,
   payments,
+  trackingItems,
   type User, 
   type InsertUser,
   type Project,
@@ -16,7 +17,9 @@ import {
   type Activity,
   type InsertActivity,
   type Payment,
-  type InsertPayment
+  type InsertPayment,
+  type TrackingItem,
+  type InsertTrackingItem
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, isNull, isNotNull } from "drizzle-orm";
@@ -74,9 +77,89 @@ export interface IStorage {
   createPayment(payment: InsertPayment): Promise<Payment>;
   updatePayment(id: number, updates: Partial<Payment>): Promise<Payment | undefined>;
   updatePaymentStatus(id: number, status: string, stripePaymentIntentId?: string): Promise<Payment | undefined>;
+  
+  // Live Tracking
+  getTrackingItem(id: number): Promise<TrackingItem | undefined>;
+  getAllTrackingItems(): Promise<TrackingItem[]>;
+  getActiveTrackingItems(): Promise<TrackingItem[]>;
+  createTrackingItem(item: InsertTrackingItem): Promise<TrackingItem>;
+  updateTrackingItem(id: number, updates: Partial<TrackingItem>): Promise<TrackingItem | undefined>;
+  toggleTrackingItemStatus(id: number): Promise<TrackingItem | undefined>;
+  deleteTrackingItem(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
+  
+  // Live Tracking methods
+  async getTrackingItem(id: number): Promise<TrackingItem | undefined> {
+    const [trackingItem] = await db
+      .select()
+      .from(trackingItems)
+      .where(eq(trackingItems.id, id));
+    return trackingItem;
+  }
+  
+  async getAllTrackingItems(): Promise<TrackingItem[]> {
+    return await db
+      .select()
+      .from(trackingItems)
+      .orderBy(desc(trackingItems.createdAt));
+  }
+  
+  async getActiveTrackingItems(): Promise<TrackingItem[]> {
+    return await db
+      .select()
+      .from(trackingItems)
+      .where(eq(trackingItems.isActive, true))
+      .orderBy(desc(trackingItems.createdAt));
+  }
+  
+  async createTrackingItem(item: InsertTrackingItem): Promise<TrackingItem> {
+    const [trackingItem] = await db
+      .insert(trackingItems)
+      .values(item)
+      .returning();
+    return trackingItem;
+  }
+  
+  async updateTrackingItem(id: number, updates: Partial<TrackingItem>): Promise<TrackingItem | undefined> {
+    // Update updatedAt timestamp
+    const updatedValues = {
+      ...updates,
+      updatedAt: new Date(),
+    };
+    
+    const [trackingItem] = await db
+      .update(trackingItems)
+      .set(updatedValues)
+      .where(eq(trackingItems.id, id))
+      .returning();
+    return trackingItem;
+  }
+  
+  async toggleTrackingItemStatus(id: number): Promise<TrackingItem | undefined> {
+    // First get the current status
+    const trackingItem = await this.getTrackingItem(id);
+    if (!trackingItem) return undefined;
+    
+    // Toggle the status
+    const [updatedItem] = await db
+      .update(trackingItems)
+      .set({
+        isActive: !trackingItem.isActive,
+        updatedAt: new Date(),
+      })
+      .where(eq(trackingItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+  
+  async deleteTrackingItem(id: number): Promise<boolean> {
+    const result = await db
+      .delete(trackingItems)
+      .where(eq(trackingItems.id, id));
+    return !!result;
+  }
   
   // Payment-related methods
   async getPayment(id: number): Promise<Payment | undefined> {
