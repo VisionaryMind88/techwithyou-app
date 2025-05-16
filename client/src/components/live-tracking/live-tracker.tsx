@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,11 @@ interface TrackingItemProps {
 export function LiveTracker({ item, onStatusChange }: TrackingItemProps) {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isUpdating, setIsUpdating] = useState(false);
+  
+  // Check if the user is an admin
+  const isAdmin = user?.role === 'admin';
   
   // Get the appropriate icon based on tracking type
   const getTypeIcon = () => {
@@ -178,17 +183,22 @@ export function LiveTracker({ item, onStatusChange }: TrackingItemProps) {
         </CardContent>
         
         <CardFooter className="flex justify-between bg-gray-50 border-t">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={toggleStatus}
-            disabled={isUpdating}
-            className="text-xs"
-          >
-            {item.isActive 
-              ? t("tracking.deactivate") || "Deactivate" 
-              : t("tracking.activate") || "Activate"}
-          </Button>
+          {/* Only admins can see the deactivate/activate button */}
+          {isAdmin ? (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={toggleStatus}
+              disabled={isUpdating}
+              className="text-xs"
+            >
+              {item.isActive 
+                ? t("tracking.deactivate") || "Deactivate" 
+                : t("tracking.activate") || "Activate"}
+            </Button>
+          ) : (
+            <div>{/* Empty div to keep the spacing consistent */}</div>
+          )}
           
           {item.url && (
             <Button 
