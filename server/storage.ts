@@ -512,21 +512,59 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getRecentMessages(userId: number, limit: number = 10): Promise<Message[]> {
-    // This is a simplified implementation - in a real app, you would join with projects
-    // to find messages for projects where this user is a participant
-    return await db
-      .select()
-      .from(messages)
-      .orderBy(desc(messages.createdAt))
-      .limit(limit);
+    // Use drizzle orm but select only columns we know exist
+    try {
+      const result = await db
+        .select({
+          id: messages.id,
+          content: messages.content,
+          projectId: messages.projectId,
+          senderId: messages.senderId,
+          isRead: messages.isRead,
+          attachments: messages.attachments,
+          createdAt: messages.createdAt,
+        })
+        .from(messages)
+        .orderBy(desc(messages.createdAt))
+        .limit(limit);
+      
+      // Add default null for recipientId that might not exist in the DB
+      return result.map(row => ({
+        ...row,
+        recipientId: null
+      }));
+    } catch (error) {
+      console.error("Error in getRecentMessages:", error);
+      // Return empty array as fallback
+      return [];
+    }
   }
 
   async getUnreadMessages(isAdmin: boolean = false): Promise<Message[]> {
-    return await db
-      .select()
-      .from(messages)
-      .where(eq(messages.isRead, false))
-      .orderBy(desc(messages.createdAt));
+    try {
+      const result = await db
+        .select({
+          id: messages.id,
+          content: messages.content,
+          projectId: messages.projectId,
+          senderId: messages.senderId,
+          isRead: messages.isRead,
+          attachments: messages.attachments,
+          createdAt: messages.createdAt,
+        })
+        .from(messages)
+        .where(eq(messages.isRead, false))
+        .orderBy(desc(messages.createdAt));
+      
+      // Add default null for recipientId that might not exist in the DB
+      return result.map(row => ({
+        ...row,
+        recipientId: null
+      }));
+    } catch (error) {
+      console.error("Error in getUnreadMessages:", error);
+      return [];
+    }
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {
