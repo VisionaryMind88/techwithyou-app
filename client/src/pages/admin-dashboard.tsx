@@ -37,7 +37,7 @@ interface Activity extends Omit<BaseActivity, 'referenceId' | 'referenceType' | 
   referenceType: string | null;
   isRead: boolean;
   createdAt: string | Date | null;
-  metadata?: unknown;
+  metadata: unknown;
 }
 
 export default function AdminDashboard() {

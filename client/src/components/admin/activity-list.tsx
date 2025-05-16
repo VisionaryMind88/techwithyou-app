@@ -115,12 +115,12 @@ export function ActivityList({ activities, isLoading = false, onViewAll }: Activ
                         {activity.user.firstName} {activity.user.lastName} {activity.description}
                       </div>
                       <p className="mt-0.5 text-sm text-gray-500">
-                        {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
+                        {activity.createdAt ? formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true }) : ''}
                       </p>
                     </div>
-                    {activity.metadata && activity.metadata.details && (
+                    {activity.metadata && typeof activity.metadata === 'object' && (
                       <div className="mt-2 text-sm text-gray-700">
-                        <p>{activity.metadata.details}</p>
+                        <p>{(activity.metadata as any)?.details || ''}</p>
                       </div>
                     )}
                   </div>
