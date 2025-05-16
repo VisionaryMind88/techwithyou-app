@@ -7,6 +7,8 @@ import { LiveTrackingSidebar } from "./sidebar/live-tracking-sidebar";
 import { motion } from "framer-motion";
 import { AnimatedIcon } from "./ui/animated-components";
 import { staggerContainer, staggerItem } from "@/lib/animation";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { LanguageSwitcher } from "./language-switcher";
 
 interface SidebarProps {
   isMobile?: boolean;
@@ -15,9 +17,13 @@ interface SidebarProps {
 
 export function Sidebar({ isMobile = false, onClose, userRole }: SidebarProps & { userRole?: string }) {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const [location] = useLocation();
   
-  const handleLogout = () => {
+  const handleLogout = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     logout();
     console.log("Logging out...");
     

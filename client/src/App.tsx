@@ -1,5 +1,5 @@
 import { Switch, Route, useLocation } from "wouter";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -21,8 +21,8 @@ import { ThemeProvider } from "next-themes";
 import { handleAuthRedirect } from "./lib/firebase";
 import { useToast } from "./hooks/use-toast";
 import { AccessibilityProvider } from "./contexts/AccessibilityContext";
-import { SkipToContent } from "./components/accessibility/SkipToContent";
 import { AccessibilitySettings } from "./components/accessibility/AccessibilitySettings";
+import { LanguageProvider } from "./contexts/LanguageContext";
 
 // Component to handle auth redirects
 function AuthRedirectHandler() {
@@ -129,19 +129,20 @@ function Router() {
 function App() {
   return (
     <AuthProvider>
-      <AccessibilityProvider>
-        <ThemeProvider attribute="class" defaultTheme="light">
-          <QueryClientProvider client={queryClient}>
-            <TooltipProvider>
-              <SkipToContent />
-              <Toaster />
-              <AuthRedirectHandler />
-              <Router />
-              <AccessibilitySettings />
-            </TooltipProvider>
-          </QueryClientProvider>
-        </ThemeProvider>
-      </AccessibilityProvider>
+      <LanguageProvider>
+        <AccessibilityProvider>
+          <ThemeProvider attribute="class" defaultTheme="light">
+            <QueryClientProvider client={queryClient}>
+              <TooltipProvider>
+                <Toaster />
+                <AuthRedirectHandler />
+                <Router />
+                <AccessibilitySettings />
+              </TooltipProvider>
+            </QueryClientProvider>
+          </ThemeProvider>
+        </AccessibilityProvider>
+      </LanguageProvider>
     </AuthProvider>
   );
 }
