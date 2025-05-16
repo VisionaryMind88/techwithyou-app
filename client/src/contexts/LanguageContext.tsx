@@ -426,6 +426,50 @@ const translations: Translations = {
     nl: 'LIVE',
     en: 'LIVE',
   },
+  'tracking.noDescription': {
+    nl: 'Geen beschrijving beschikbaar',
+    en: 'No description provided',
+  },
+  'tracking.all': {
+    nl: 'Alle tracking items',
+    en: 'All tracking items',
+  },
+  'tracking.settings': {
+    nl: 'Tracking instellingen',
+    en: 'Tracking settings',
+  },
+  'tracking.settingsTitle': {
+    nl: 'Instellingen',
+    en: 'Settings',
+  },
+  'tracking.settingsDescription': {
+    nl: 'Configureer hoe tracking items worden weergegeven en bijgewerkt',
+    en: 'Configure how tracking items are displayed and updated',
+  },
+  'tracking.settingsAutoRefresh': {
+    nl: 'Automatisch vernieuwen',
+    en: 'Auto refresh',
+  },
+  'tracking.settingsNotifications': {
+    nl: 'Notificaties',
+    en: 'Notifications',
+  },
+  'status.pending': {
+    nl: 'In afwachting',
+    en: 'Pending',
+  },
+  'status.online': {
+    nl: 'Online',
+    en: 'Online',
+  },
+  'status.offline': {
+    nl: 'Offline',
+    en: 'Offline',
+  },
+  'status.inactive': {
+    nl: 'Inactief',
+    en: 'Inactive',
+  },
   'action.openLink': {
     nl: 'Open Link',
     en: 'Open Link',
@@ -433,6 +477,14 @@ const translations: Translations = {
   'common.backToDashboard': {
     nl: 'Ga terug naar Dashboard',
     en: 'Go back to Dashboard',
+  },
+  'common.enabled': {
+    nl: 'Ingeschakeld',
+    en: 'Enabled',
+  },
+  'common.configure': {
+    nl: 'Configureren',
+    en: 'Configure',
   },
 
   // Language

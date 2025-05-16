@@ -151,82 +151,92 @@ export function LiveTracker({ item, onStatusChange }: TrackingItemProps) {
   };
   
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <Card className={`overflow-hidden ${!item.isActive ? 'opacity-75' : ''}`}>
-        <CardHeader className="pb-2">
-          <div className="flex justify-between items-start">
-            <div>
-              <CardTitle className="flex items-center text-lg font-semibold">
-                {getTypeIcon()}
-                {item.name}
-              </CardTitle>
-              <CardDescription className="mt-1 text-sm text-gray-500">
-                {item.type} • {item.lastChecked ? `Last checked ${new Date(item.lastChecked).toLocaleString()}` : 'Not checked yet'}
-              </CardDescription>
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Card className={`overflow-hidden ${!item.isActive ? 'opacity-75' : ''}`}>
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle className="flex items-center text-lg font-semibold">
+                  {getTypeIcon()}
+                  {item.name}
+                </CardTitle>
+                <CardDescription className="mt-1 text-sm text-gray-500">
+                  {item.type} • {item.lastChecked ? `Last checked ${new Date(item.lastChecked).toLocaleString()}` : 'Not checked yet'}
+                </CardDescription>
+              </div>
+              <div>
+                {getStatusBadge()}
+              </div>
             </div>
-            <div>
-              {getStatusBadge()}
-            </div>
-          </div>
-        </CardHeader>
-        
-        <CardContent>
-          <p className="text-sm text-gray-700 mb-3">{item.description || t("tracking.noDescription") || "No description provided"}</p>
+          </CardHeader>
           
-          {item.url && (
-            <div className="flex items-center text-sm text-blue-600">
-              <Globe className="h-3.5 w-3.5 mr-1" />
-              <span className="truncate">{item.url}</span>
-            </div>
-          )}
-        </CardContent>
-        
-        <CardFooter className="flex justify-between bg-gray-50 border-t">
-          {/* Only admins can see the deactivate/activate button */}
-          {isAdmin ? (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={toggleStatus}
-              disabled={isUpdating}
-              className="text-xs"
-            >
-              {item.isActive 
-                ? t("tracking.deactivate") || "Deactivate" 
-                : t("tracking.activate") || "Activate"}
-            </Button>
-          ) : (
-            <div>{/* Empty div to keep the spacing consistent */}</div>
-          )}
-          
-          <div className="flex gap-2">
+          <CardContent>
+            <p className="text-sm text-gray-700 mb-3">{item.description || t("tracking.noDescription") || "No description provided"}</p>
+            
             {item.url && (
-              <Button 
-                variant="default" 
-                size="sm"
-                onClick={handleOpenLink}
-                className="text-xs bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md transition-all duration-300 hover:shadow-lg"
-              >
-                <ExternalLink className="h-3.5 w-3.5 mr-1" />
-                LIVE
-              </Button>
+              <div className="flex items-center text-sm text-blue-600">
+                <Globe className="h-3.5 w-3.5 mr-1" />
+                <span className="truncate">{item.url}</span>
+              </div>
             )}
-            <Button
-              variant="outline"
-              size="sm" 
-              onClick={() => setIsChatOpen(true)}
-              className="text-xs flex items-center"
-            >
-              <MessageSquare className="h-3.5 w-3.5 mr-1" />
-              {t("tracking.chat") || "Chat"}
-            </Button>
-          </div>
-        </CardFooter>
-      </Card>
-    </motion.div>
+          </CardContent>
+          
+          <CardFooter className="flex justify-between bg-gray-50 border-t">
+            {/* Only admins can see the deactivate/activate button */}
+            {isAdmin ? (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={toggleStatus}
+                disabled={isUpdating}
+                className="text-xs"
+              >
+                {item.isActive 
+                  ? t("tracking.deactivate") || "Deactivate" 
+                  : t("tracking.activate") || "Activate"}
+              </Button>
+            ) : (
+              <div>{/* Empty div to keep the spacing consistent */}</div>
+            )}
+            
+            <div className="flex gap-2">
+              {item.url && (
+                <Button 
+                  variant="default" 
+                  size="sm"
+                  onClick={handleOpenLink}
+                  className="text-xs bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md transition-all duration-300 hover:shadow-lg"
+                >
+                  <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                  LIVE
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm" 
+                onClick={() => setIsChatOpen(true)}
+                className="text-xs flex items-center"
+              >
+                <MessageSquare className="h-3.5 w-3.5 mr-1" />
+                {t("tracking.chat") || "Chat"}
+              </Button>
+            </div>
+          </CardFooter>
+        </Card>
+      </motion.div>
+      
+      {/* Chat Dialog */}
+      <TrackingChatDialog
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        trackingItemId={item.id}
+        trackingItemName={item.name}
+      />
+    </>
   );
 }
