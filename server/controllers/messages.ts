@@ -243,22 +243,32 @@ export function registerMessageRoutes(app: Express) {
         return res.status(401).json({ message: 'Authentication required' });
       }
       
+      // Mark that we need to preserve the session and touch cookie expiry
+      const preserveSession = req.headers['x-preserve-session'] === 'true';
+      if (preserveSession) {
+        console.log('Message request with X-Preserve-Session header, extending session');
+        req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+      }
+      
       const messageData = {
         ...req.body,
         senderId: req.user.id
       };
       
       // Force save session before proceeding to ensure we don't lose the session
-      await new Promise<void>((resolve) => {
-        req.session.save((err) => {
-          if (err) {
-            console.error('Error saving session during message creation:', err);
-          } else {
-            console.log('Session saved successfully during message creation');
-          }
-          resolve();
+      if (preserveSession) {
+        await new Promise<void>((resolve) => {
+          req.session.touch(); // Mark session as active
+          req.session.save((err) => {
+            if (err) {
+              console.error('Error saving session during message creation:', err);
+            } else {
+              console.log('Session saved successfully during message creation');
+            }
+            resolve();
+          });
         });
-      });
+      }
       
       // Validate message data
       const validationResult = insertMessageSchema.safeParse(messageData);
@@ -284,10 +294,14 @@ export function registerMessageRoutes(app: Express) {
       
       const newMessage = await storage.createMessage(messageData);
       
+      // Add a timestamp of when the message was processed
+      const processedTimestamp = new Date().toISOString();
+      
       // Include sender info in response
       const sender = req.user;
       const messageWithSender = {
         ...newMessage,
+        processedAt: processedTimestamp,
         sender: {
           id: sender.id,
           email: sender.email,
@@ -297,7 +311,35 @@ export function registerMessageRoutes(app: Express) {
         }
       };
       
+      // Create a notification activity for the recipient
+      const recipientId = req.user.role === 'admin' ? project.userId : 1; // Admin id is 1
+      try {
+        await storage.createActivity({
+          type: 'message_received',
+          description: `New message from ${sender.firstName || sender.email}`,
+          userId: recipientId,
+          projectId: project.id,
+          isRead: false,
+          referenceId: newMessage.id,
+          referenceType: 'message',
+          metadata: { senderId: sender.id }
+        });
+      } catch (activityError) {
+        console.error('Error creating message activity:', activityError);
+        // Don't fail the whole request if activity creation fails
+      }
+      
       console.log('Message created successfully:', newMessage.id);
+      
+      // Save session one more time after successful operation
+      if (preserveSession) {
+        req.session.save((err) => {
+          if (err) {
+            console.error('Error saving session after message creation:', err);
+          }
+        });
+      }
+      
       res.status(201).json(messageWithSender);
     } catch (error) {
       console.error('Create message error:', error);

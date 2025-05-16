@@ -99,49 +99,86 @@ export default function MessagesPage() {
         isRead: false
       };
       
-      // First verify user is still authenticated
-      const authCheck = await fetch('/api/auth/user', {
-        credentials: 'include'
-      });
-      
-      if (!authCheck.ok) {
-        // Refresh the page to trigger a proper login redirect
-        window.location.reload();
-        return;
+      // Send a ping to keep the session alive
+      try {
+        await fetch('/api/health', { 
+          credentials: 'include',
+          method: 'GET',
+          headers: {
+            'X-Session-Keep-Alive': 'true'
+          }
+        });
+      } catch (pingError) {
+        console.log("Session ping failed, continuing anyway:", pingError);
       }
       
-      // Send the message
+      // Send the message directly without the pre-check
       const messageResponse = await fetch('/api/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Requested-By': 'message-form' // Custom header to identify the request
+          'X-Requested-By': 'message-form', // Custom header to identify the request
+          'X-Preserve-Session': 'true'       // Signal to the server to preserve the session
         },
         body: JSON.stringify(messageData),
-        credentials: 'include'
+        credentials: 'include',
+        cache: 'no-cache',
+        mode: 'same-origin' // Enforce same-origin to ensure cookies are sent
       });
       
-      if (!messageResponse.ok) {
-        if (messageResponse.status === 401) {
-          // If unauthorized, reload to properly redirect to login
-          toast({
-            title: "Session expired",
-            description: "Your session has expired. Please log in again.",
-            variant: "destructive"
-          });
-          
-          // Short delay before reload to allow toast to be seen
-          setTimeout(() => window.location.reload(), 1500);
-          return;
-        }
-        throw new Error(`Error sending message: ${messageResponse.statusText}`);
+      // Clear the input field immediately on successful send
+      if (messageResponse.ok) {
+        setNewMessage("");
+        
+        // Invalidate queries to refresh the messages
+        queryClient.invalidateQueries({ queryKey: ['/api/messages/recent'] });
+        return;
       }
       
-      // Invalidate queries to refresh the messages
-      queryClient.invalidateQueries({ queryKey: ['/api/messages/recent'] });
+      // Handle errors
+      if (messageResponse.status === 401) {
+        console.log("Authentication failed when sending message");
+        
+        // Try to refresh the auth state before giving up
+        try {
+          // Try to re-authenticate silently
+          const refreshResult = await fetch('/api/auth/user', {
+            credentials: 'include',
+            cache: 'no-cache',
+            headers: {
+              'X-Auth-Refresh': 'true'
+            }
+          });
+          
+          if (refreshResult.ok) {
+            // Auth refreshed, try to send the message again
+            toast({
+              title: "Retrying",
+              description: "Reconnecting to your session...",
+            });
+            
+            setTimeout(() => {
+              handleSendMessage(); // Try again
+            }, 500);
+            return;
+          }
+        } catch (refreshError) {
+          console.error("Auth refresh error:", refreshError);
+        }
+        
+        // If we get here, the refresh failed
+        toast({
+          title: "Session expired",
+          description: "Your session has expired. Please log in again.",
+          variant: "destructive"
+        });
+        
+        // Short delay before reload to allow toast to be seen
+        setTimeout(() => window.location.href = '/auth', 1500);
+        return;
+      }
       
-      // Clear the input field
-      setNewMessage("");
+      throw new Error(`Error sending message: ${messageResponse.statusText}`);
     } catch (error) {
       console.error("Error sending message:", error);
       toast({
