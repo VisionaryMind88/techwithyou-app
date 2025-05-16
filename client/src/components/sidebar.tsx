@@ -130,7 +130,7 @@ export function Sidebar({ isMobile = false, onClose, userRole }: SidebarProps & 
               <AnimatedIcon className="mr-3">
                 <Home className={cn("h-5 w-5", isActive("/") && "text-blue-100")} />
               </AnimatedIcon>
-              Dashboard
+              {t('nav.dashboard')}
             </Link>
           </motion.li>
           <motion.li variants={staggerItem}>
@@ -144,7 +144,7 @@ export function Sidebar({ isMobile = false, onClose, userRole }: SidebarProps & 
               <AnimatedIcon className="mr-3">
                 <FolderOpen className={cn("h-5 w-5", isActive("/projects") && "text-blue-100")} />
               </AnimatedIcon>
-              Projects
+              {t('nav.projects')}
             </Link>
           </motion.li>
           <motion.li variants={staggerItem}>
@@ -158,7 +158,7 @@ export function Sidebar({ isMobile = false, onClose, userRole }: SidebarProps & 
               <AnimatedIcon className="mr-3">
                 <MessageSquare className={cn("h-5 w-5", isActive("/messages") && "text-blue-100")} />
               </AnimatedIcon>
-              Messages
+              {t('nav.messages')}
             </Link>
           </motion.li>
           <motion.li variants={staggerItem}>
@@ -172,7 +172,7 @@ export function Sidebar({ isMobile = false, onClose, userRole }: SidebarProps & 
               <AnimatedIcon className="mr-3">
                 <Settings className={cn("h-5 w-5", isActive("/settings") && "text-blue-100")} />
               </AnimatedIcon>
-              Settings
+              {t('nav.settings')}
             </Link>
           </motion.li>
           
@@ -189,7 +189,7 @@ export function Sidebar({ isMobile = false, onClose, userRole }: SidebarProps & 
                 <AnimatedIcon className="mr-3">
                   <Users className={cn("h-5 w-5", isActive("/users") && "text-blue-100")} />
                 </AnimatedIcon>
-                Users
+                {t('nav.users')}
               </Link>
             </motion.li>
           )}
@@ -216,6 +216,12 @@ export function Sidebar({ isMobile = false, onClose, userRole }: SidebarProps & 
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
       >
+        {/* Language Switcher */}
+        <div className="flex justify-center mb-4">
+          <LanguageSwitcher className="bg-blue-700 hover:bg-blue-600" />
+        </div>
+      
+        {/* Logout Button */}
         <motion.button 
           onClick={handleLogout}
           className="flex items-center p-2 w-full rounded-md hover:bg-blue-500 text-white"
@@ -225,7 +231,7 @@ export function Sidebar({ isMobile = false, onClose, userRole }: SidebarProps & 
           <AnimatedIcon className="mr-3" whileHover={{ rotate: 15 }}>
             <LogOut className="h-5 w-5" />
           </AnimatedIcon>
-          Logout
+          {t('action.logout')}
         </motion.button>
       </motion.div>
     </motion.div>
