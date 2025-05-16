@@ -376,7 +376,7 @@ export default function CustomerDashboard() {
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => window.location.href = `/project/${project.id}`}
+                            onClick={() => navigate(`/projects/${project.id}`)}
                           >
                             Details
                           </Button>

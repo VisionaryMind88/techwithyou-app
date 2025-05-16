@@ -78,10 +78,10 @@ export function ProjectForm({ isOpen, onClose }: ProjectFormProps) {
     }
 
     try {
-      // Submit project
+      // Submit project with userId from user context
       const projectResponse = await apiRequest('POST', '/api/projects', {
         ...values,
-        userId: user.id
+        // No need to set userId here as it's already included in values
       });
       
       const newProject = await projectResponse.json();
@@ -91,13 +91,25 @@ export function ProjectForm({ isOpen, onClose }: ProjectFormProps) {
         const formData = new FormData();
         selectedFiles.forEach(file => formData.append('files', file));
         formData.append('projectId', newProject.id.toString());
-        formData.append('userId', user.id.toString());
         
-        await fetch('/api/files/upload', {
-          method: 'POST',
-          body: formData,
-          credentials: 'include'
-        });
+        try {
+          const fileResponse = await fetch('/api/files/upload', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+          });
+          
+          if (!fileResponse.ok) {
+            throw new Error(`File upload failed: ${fileResponse.statusText}`);
+          }
+        } catch (fileError) {
+          console.error("Error uploading files:", fileError);
+          toast({
+            title: "File upload issue",
+            description: "Project was created but there was an issue uploading files",
+            variant: "destructive",
+          });
+        }
       }
       
       // Success message
@@ -110,8 +122,9 @@ export function ProjectForm({ isOpen, onClose }: ProjectFormProps) {
       form.reset();
       setSelectedFiles([]);
       
-      // Invalidate projects query to refresh data
-      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      // Invalidate all project-related queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/projects/user'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects/admin'] });
       
       onClose();
     } catch (error) {
@@ -157,11 +170,11 @@ export function ProjectForm({ isOpen, onClose }: ProjectFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="Website Design">Website Design</SelectItem>
-                      <SelectItem value="Mobile App Development">Mobile App Development</SelectItem>
-                      <SelectItem value="E-commerce Solution">E-commerce Solution</SelectItem>
-                      <SelectItem value="SEO Optimization">SEO Optimization</SelectItem>
-                      <SelectItem value="Custom Software">Custom Software</SelectItem>
+                      <SelectItem value="website">Website Design</SelectItem>
+                      <SelectItem value="mobile_app">Mobile App Development</SelectItem>
+                      <SelectItem value="ecommerce">E-commerce Solution</SelectItem>
+                      <SelectItem value="seo">SEO Optimization</SelectItem>
+                      <SelectItem value="custom_software">Custom Software</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
