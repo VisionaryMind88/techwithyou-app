@@ -522,11 +522,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUnreadMessages(isAdmin: boolean = false): Promise<Message[]> {
-    return await db
-      .select()
-      .from(messages)
-      .where(eq(messages.isRead, false))
-      .orderBy(desc(messages.createdAt));
+    try {
+      // If we're an admin, we want to see all unread messages
+      if (isAdmin) {
+        return await db
+          .select()
+          .from(messages)
+          .where(eq(messages.isRead, false))
+          .orderBy(desc(messages.createdAt));
+      } else {
+        // For regular users, we'd filter by recipient but we'll implement this later
+        return await db
+          .select()
+          .from(messages)
+          .where(eq(messages.isRead, false))
+          .orderBy(desc(messages.createdAt));
+      }
+    } catch (error) {
+      console.error("Error fetching unread messages:", error);
+      // Return empty array if there's a database error to prevent crashes
+      return [];
+    }
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {

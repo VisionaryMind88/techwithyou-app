@@ -147,6 +147,7 @@ export function AdminDashboardStats({
     unreadMessages: { ...defaultStats.unreadMessages, ...stats.unreadMessages }
   };
 
+  // Create array of stat items for rendering
   const statItems = Object.values(mergedStats);
   
   // Help screen readers announce changes to stats
