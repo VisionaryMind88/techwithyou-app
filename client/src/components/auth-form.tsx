@@ -9,8 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/context/auth-context";
 import { Logo } from "@/components/logo";
 import { useToast } from "@/hooks/use-toast";
-import { motion, AnimatePresence } from "framer-motion";
-import { fadeIn, staggerContainer, staggerItem, slideIn, buttonHover } from "@/lib/animation";
+import { motion } from "framer-motion";
 
 interface AuthFormProps {
   onSuccessfulAuth?: () => void;
@@ -237,30 +236,34 @@ export function AuthForm({ onSuccessfulAuth }: AuthFormProps) {
   };
 
   return (
-    <motion.div
-      initial="hidden"
-      animate="show"
-      variants={staggerContainer(0.1)}
-      className="w-full max-w-md mx-auto"
-    >
-      <Card className="w-full overflow-hidden">
-        <CardHeader className="space-y-2 text-center">
-          <motion.div 
-            className="flex justify-center mb-4"
-            variants={fadeIn("down", 0.3)}
-          >
-            <Logo size="lg" />
-          </motion.div>
-          <motion.div variants={fadeIn("up", 0.4)}>
-            <CardTitle className="text-2xl">Welcome</CardTitle>
-            <CardDescription>
-              Sign in to your account or create a new one
-            </CardDescription>
-          </motion.div>
-        </CardHeader>
+    <Card className="w-full max-w-md mx-auto overflow-hidden">
+      <CardHeader className="space-y-2 text-center">
+        <motion.div 
+          className="flex justify-center mb-4"
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Logo size="lg" />
+        </motion.div>
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <CardTitle className="text-2xl">Welcome</CardTitle>
+          <CardDescription>
+            Sign in to your account or create a new one
+          </CardDescription>
+        </motion.div>
+      </CardHeader>
       
       <CardContent>
-        <motion.div variants={fadeIn("up", 0.5)}>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
           <Tabs 
             defaultValue="login" 
             value={activeTab} 
@@ -513,6 +516,7 @@ export function AuthForm({ onSuccessfulAuth }: AuthFormProps) {
             GitHub
           </Button>
         </div>
+          </motion.div>
       </CardContent>
       
       <CardFooter className="flex flex-col space-y-2">
