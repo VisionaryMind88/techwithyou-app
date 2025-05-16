@@ -13,7 +13,7 @@ import { Sidebar } from "@/components/sidebar";
 import { ChatModule } from "@/components/chat-module";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Menu, Bell, MessageSquare, BarChart, Plus, Settings, Users, FileText } from "lucide-react";
+import { Menu, Bell, MessageSquare, ActivityIcon, BarChart, Plus, Settings, Users, FileText } from "lucide-react";
 import { RiFolderLine, RiTimeLine, RiUserLine, RiChat3Line } from "react-icons/ri";
 import { OnboardingTour, adminTourSteps } from "@/components/onboarding-tour";
 import { useAuth } from "@/context/auth-context";
@@ -26,9 +26,9 @@ import { fadeIn, staggerContainer, staggerItem, slideIn, buttonHover } from "@/l
 import { MobileHeader } from "@/components/mobile/mobile-header";
 import { BottomNavigation } from "@/components/mobile/bottom-navigation";
 import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
 import { PageTransition } from "@/components/ui/page-transition";
 import { AnimatedButton, AnimatedCard, AnimatedIcon } from "@/components/ui/animated-components";
-import { NotificationsDropdown } from "@/components/notifications-dropdown";
 
 // Enhanced Activity interface that matches our extended schema
 interface Activity extends Omit<BaseActivity, 'referenceId' | 'referenceType' | 'isRead' | 'createdAt'> {
