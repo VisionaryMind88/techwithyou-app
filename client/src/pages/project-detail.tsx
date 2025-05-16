@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRoute, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Sidebar } from "@/components/sidebar";
@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, MessageCircle, Upload, Clock, ArrowLeft, Menu } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Calendar, MessageCircle, Upload, Clock, ArrowLeft, Menu, History, ListOrdered, ChevronDown, ChevronUp, Tag } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +28,11 @@ export default function ProjectDetail() {
   const [, navigate] = useLocation();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  const [selectedFileId, setSelectedFileId] = useState<number | null>(null);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [isVersionUploadOpen, setIsVersionUploadOpen] = useState(false);
+  const versionFileInputRef = useRef<HTMLInputElement>(null);
+  const [versionNote, setVersionNote] = useState('');
   const { user } = useAuth();
   const { toast } = useToast();
   const projectId = params?.id ? parseInt(params.id) : null;
@@ -48,6 +54,16 @@ export default function ProjectDetail() {
   } = useQuery<Array<Message & { sender: User }>>({
     queryKey: ['/api/messages/project', projectId],
     enabled: !!projectId,
+  });
+  
+  // Fetch file versions when a file is selected
+  const {
+    data: fileVersions = [],
+    isLoading: isLoadingVersions,
+    refetch: refetchVersions
+  } = useQuery<File[]>({
+    queryKey: ['/api/files/versions', selectedFileId],
+    enabled: !!selectedFileId && showVersionHistory,
   });
 
   // Handle uploading files to a project
@@ -105,6 +121,44 @@ export default function ProjectDetail() {
       });
     }
   });
+  
+  // Handle uploading a new version of a file
+  const fileVersionUploadMutation = useMutation({
+    mutationFn: async ({ fileId, file, versionNote }: { fileId: number, file: File, versionNote?: string }) => {
+      if (!user?.id) throw new Error("Missing user ID");
+      
+      const formData = new FormData();
+      formData.append('files', file);
+      if (versionNote) formData.append('versionNote', versionNote);
+      
+      return fetch(`/api/files/${fileId}/versions`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Version Uploaded",
+        description: "New file version has been uploaded successfully"
+      });
+      // Close the upload dialog
+      setIsVersionUploadOpen(false);
+      setVersionNote('');
+      
+      // Refresh file versions and project data
+      refetchVersions();
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId] });
+    },
+    onError: (error) => {
+      console.error("Version upload error:", error);
+      toast({
+        title: "Upload Failed",
+        description: "There was an error uploading the file version. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
 
   // Helper to determine status badge styles
   const getStatusStyle = (status: string): { color: string, bg: string, label: string } => {
@@ -130,6 +184,35 @@ export default function ProjectDetail() {
 
   const handleCompleteProject = () => {
     updateStatusMutation.mutate('completed');
+  };
+  
+  // Handle showing file version history
+  const handleShowVersionHistory = (fileId: number) => {
+    setSelectedFileId(fileId);
+    setShowVersionHistory(true);
+  };
+  
+  // Handle uploading a new version
+  const handleNewVersionUpload = (fileId: number) => {
+    setSelectedFileId(fileId);
+    setIsVersionUploadOpen(true);
+  };
+  
+  // Handle file selection for version upload
+  const handleVersionFileSelect = () => {
+    versionFileInputRef.current?.click();
+  };
+  
+  // Handle file input change for version upload
+  const handleVersionFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0 && selectedFileId) {
+      fileVersionUploadMutation.mutate({
+        fileId: selectedFileId,
+        file: files[0],
+        versionNote: versionNote || undefined
+      });
+    }
   };
 
   // Format file size
@@ -399,25 +482,49 @@ export default function ProjectDetail() {
                           
                           {project.files && project.files.length > 0 ? (
                             <div className="space-y-3">
-                              {project.files.map((file) => (
-                                <div key={file.id} className="flex items-center p-3 border border-gray-200 rounded-md">
-                                  <div className="p-2 bg-gray-100 rounded-md">
-                                    <Upload className="h-5 w-5 text-gray-500" />
+                              {project.files.filter(file => !file.parentFileId).map((file) => (
+                                <div key={file.id} className="flex flex-col border border-gray-200 rounded-md">
+                                  <div className="flex items-center p-3">
+                                    <div className="p-2 bg-gray-100 rounded-md">
+                                      <Upload className="h-5 w-5 text-gray-500" />
+                                    </div>
+                                    <div className="ml-3 flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-gray-900 truncate">{file.originalName}</p>
+                                      <p className="text-xs text-gray-500">
+                                        {formatFileSize(file.size)} • Uploaded on {format(new Date(file.createdAt || new Date()), "MMM d, yyyy")}
+                                        {file.isLatestVersion && <span className="ml-2 text-xs bg-green-100 text-green-800 px-1.5 py-0.5 rounded">Latest</span>}
+                                        {file.versionNumber > 1 && <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">v{file.versionNumber}</span>}
+                                      </p>
+                                    </div>
+                                    <div className="flex space-x-2">
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="text-primary-600"
+                                        onClick={() => window.open(`/api/files/${file.id}`, '_blank')}
+                                      >
+                                        Download
+                                      </Button>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="text-primary-600"
+                                        onClick={() => handleShowVersionHistory(file.id)}
+                                      >
+                                        <History className="h-4 w-4 mr-1" />
+                                        History
+                                      </Button>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="text-primary-600"
+                                        onClick={() => handleNewVersionUpload(file.id)}
+                                      >
+                                        <Tag className="h-4 w-4 mr-1" />
+                                        New Version
+                                      </Button>
+                                    </div>
                                   </div>
-                                  <div className="ml-3 flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-gray-900 truncate">{file.originalName}</p>
-                                    <p className="text-xs text-gray-500">
-                                      {formatFileSize(file.size)} • Uploaded on {format(new Date(file.createdAt), "MMM d, yyyy")}
-                                    </p>
-                                  </div>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="ml-3 text-primary-600"
-                                    onClick={() => window.open(`/api/files/${file.id}`, '_blank')}
-                                  >
-                                    Download
-                                  </Button>
                                 </div>
                               ))}
                             </div>
@@ -496,6 +603,154 @@ export default function ProjectDetail() {
           onClose={() => setIsChatModalOpen(false)}
         />
       )}
+      
+      {/* Version History Dialog */}
+      <Dialog open={showVersionHistory} onOpenChange={setShowVersionHistory}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>File Version History</DialogTitle>
+            <DialogDescription>
+              View and manage all versions of this file
+            </DialogDescription>
+          </DialogHeader>
+          
+          {isLoadingVersions ? (
+            <div className="flex justify-center py-6">
+              <div className="animate-spin w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full"></div>
+            </div>
+          ) : (
+            <>
+              {fileVersions.length > 0 ? (
+                <div className="space-y-4 max-h-96 overflow-y-auto p-1">
+                  {fileVersions.map((version) => (
+                    <div key={version.id} className="flex items-start p-3 border border-gray-200 rounded-md">
+                      <div className="p-2 bg-gray-100 rounded-md">
+                        <Upload className="h-5 w-5 text-gray-500" />
+                      </div>
+                      <div className="ml-3 flex-1">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{version.originalName}</p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Version {version.versionNumber} • {formatFileSize(version.size)} • 
+                              Uploaded on {format(new Date(version.createdAt || new Date()), "MMM d, yyyy")}
+                            </p>
+                          </div>
+                          {version.isLatestVersion && (
+                            <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                              Latest Version
+                            </span>
+                          )}
+                        </div>
+                        
+                        {version.versionNote && (
+                          <div className="mt-2 text-sm text-gray-700 bg-gray-50 p-2 rounded">
+                            <span className="font-medium">Note:</span> {version.versionNote}
+                          </div>
+                        )}
+                        
+                        <div className="mt-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => window.open(`/api/files/${version.id}`, '_blank')}
+                          >
+                            Download
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <ListOrdered className="h-10 w-10 mx-auto mb-2 text-gray-400" />
+                  <p>No version history available</p>
+                </div>
+              )}
+            </>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowVersionHistory(false)}>
+              Close
+            </Button>
+            <Button onClick={() => {
+              setShowVersionHistory(false);
+              setIsVersionUploadOpen(true);
+            }}>
+              <Tag className="h-4 w-4 mr-1" />
+              Upload New Version
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* New Version Upload Dialog */}
+      <Dialog open={isVersionUploadOpen} onOpenChange={setIsVersionUploadOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upload New Version</DialogTitle>
+            <DialogDescription>
+              Upload a new version of this file
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label htmlFor="version-note" className="block text-sm font-medium text-gray-700 mb-1">
+                  Version Note
+                </label>
+                <textarea
+                  id="version-note"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="Describe what changed in this version..."
+                  rows={3}
+                  value={versionNote}
+                  onChange={(e) => setVersionNote(e.target.value)}
+                />
+              </div>
+              
+              <div>
+                <button
+                  className="w-full flex items-center justify-center px-4 py-3 border-2 border-dashed border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  onClick={handleVersionFileSelect}
+                >
+                  <Upload className="h-5 w-5 mr-2" />
+                  Select File to Upload
+                </button>
+                <input
+                  type="file"
+                  ref={versionFileInputRef}
+                  className="hidden"
+                  onChange={handleVersionFileChange}
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  File should be a newer version of the same document
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsVersionUploadOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleVersionFileSelect}
+              disabled={fileVersionUploadMutation.isPending}
+            >
+              {fileVersionUploadMutation.isPending ? (
+                <>
+                  <div className="animate-spin w-4 h-4 mr-2 border-2 border-gray-300 border-t-white rounded-full"></div>
+                  Uploading...
+                </>
+              ) : "Upload Version"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
