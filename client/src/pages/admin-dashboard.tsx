@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { AdminDashboardStats } from "@/components/admin/dashboard-stats";
-import { ProjectTable } from "@/components/admin/project-table";
+import { ProjectTable } from "@/components/admin/new-project-table";
 import { ActivityList } from "@/components/admin/activity-list";
 import { AdminMessagesList } from "@/components/admin/messages-list";
 import { ProjectAnalytics } from "@/components/admin/project-analytics";

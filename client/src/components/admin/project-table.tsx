@@ -132,28 +132,27 @@ export function ProjectTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            <motion.div
-              variants={staggerContainer}
-              initial="hidden"
-              animate="visible"
-              className="contents"
-            >
-              {projects.map((project, index) => {
-                const statusStyle = getStatusStyle(project.status);
-                
-                return (
-                  <motion.tr
-                    key={project.id}
-                    variants={staggerItem}
-                    className="contents"
-                    whileHover={{ 
-                      backgroundColor: "rgba(0, 0, 0, 0.02)",
-                      transition: { duration: 0.1 }
-                    }}
-                    custom={index}
-                  >
-                    <TableRow>
-                      <TableCell className="font-medium">
+            {projects.map((project, index) => {
+              const statusStyle = getStatusStyle(project.status);
+              
+              return (
+                <motion.tr
+                  key={project.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ 
+                    duration: 0.4, 
+                    delay: 0.1 * index,
+                    ease: "easeOut"
+                  }}
+                  whileHover={{ 
+                    backgroundColor: "rgba(0, 0, 0, 0.05)",
+                    scale: 1.005, 
+                    transition: { duration: 0.2 }
+                  }}
+                  className="border-b hover:bg-muted/50 data-[state=selected]:bg-muted"
+                >
+                  <TableCell className="font-medium">
                         <motion.span
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
@@ -300,14 +299,13 @@ export function ProjectTable({
                           </motion.div>
                         )}
                       </TableCell>
-                    </TableRow>
-                  </motion.tr>
+                    </motion.tr>
                 );
               })}
-            </motion.div>
-          </TableBody>
-        </Table>
-      </div>
-    </motion.div>
-  );
+            </TableBody>
+          </Table>
+        </div>
+      </motion.div>
+    );
+  }
 }
