@@ -28,6 +28,7 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
   
   // Projects
   getProject(id: number): Promise<Project | undefined>;
@@ -321,6 +322,37 @@ export class DatabaseStorage implements IStorage {
       .where(eq(activities.id, id))
       .returning();
     return updatedActivity || undefined;
+  }
+  
+  // Delete a user
+  async deleteUser(id: number): Promise<boolean> {
+    try {
+      // First, delete related data for this user
+      // Note: In a production environment, you might want to soft-delete or archive these instead
+      
+      // Delete user's activities
+      await db.delete(activities).where(eq(activities.userId, id));
+      
+      // Delete user's messages
+      await db.delete(messages).where(eq(messages.senderId, id));
+      
+      // Delete user's files
+      await db.delete(files).where(eq(files.userId, id));
+      
+      // Delete user's projects
+      await db.delete(projects).where(eq(projects.userId, id));
+      
+      // Finally, delete the user
+      const deletedUser = await db
+        .delete(users)
+        .where(eq(users.id, id))
+        .returning();
+      
+      return deletedUser.length > 0;
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      return false;
+    }
   }
 }
 
