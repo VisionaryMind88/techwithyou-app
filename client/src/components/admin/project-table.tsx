@@ -136,20 +136,8 @@ export function ProjectTable({
               const statusStyle = getStatusStyle(project.status);
               
               return (
-                <motion.tr
+                <TableRow
                   key={project.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ 
-                    duration: 0.4, 
-                    delay: 0.1 * index,
-                    ease: "easeOut"
-                  }}
-                  whileHover={{ 
-                    backgroundColor: "rgba(0, 0, 0, 0.05)",
-                    scale: 1.005, 
-                    transition: { duration: 0.2 }
-                  }}
                   className="border-b hover:bg-muted/50 data-[state=selected]:bg-muted"
                 >
                   <TableCell className="font-medium">
@@ -299,7 +287,7 @@ export function ProjectTable({
                           </motion.div>
                         )}
                       </TableCell>
-                    </motion.tr>
+                    </TableRow>
                 );
               })}
             </TableBody>
