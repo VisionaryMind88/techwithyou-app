@@ -1,108 +1,103 @@
-/* Accessibility CSS */
+/* Accessibility CSS for Tech With You platform */
 
-/* Skip links container */
-.skip-links {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+/* General accessibility variables */
+:root {
+  --font-scale: 1;
+  --animation-duration: 0.3s;
+  --focus-ring-color: #2563eb;
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 2px;
 }
 
-/* Skip to content link - hidden by default, visible on focus */
-.skip-to-content {
-  position: absolute;
-  top: -40px;
-  left: 0;
-  background: #0044ff;
-  color: white;
-  padding: 12px 16px;
-  z-index: 9999;
-  font-weight: bold;
-  transition: top 0.2s ease;
-  text-decoration: none;
-  border-radius: 0 0 4px 0;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-.skip-to-content:focus {
-  top: 0;
-  outline: 2px solid white;
-  outline-offset: 2px;
-}
-
-/* Enhanced skip link for high contrast mode */
-.high-contrast .skip-to-content {
-  background: #000000;
-  color: #ffff00;
-  border: 2px solid #ffff00;
-}
-
-.high-contrast .skip-to-content:focus {
-  outline: 3px solid #ffff00;
-  outline-offset: 3px;
+/* Reduced motion mode */
+.reduce-motion * {
+  animation-duration: var(--animation-duration) !important;
+  transition-duration: var(--animation-duration) !important;
+  scroll-behavior: auto !important;
 }
 
 /* High contrast mode */
 .high-contrast {
-  --background: 0 0% 100%;
-  --foreground: 0 0% 0%;
-  
-  /* Stronger primary colors */
-  --primary: 221 83% 45%;
-  --primary-foreground: 0 0% 100%;
-  
-  /* Higher contrast colors for better visibility */
-  --card: 0 0% 100%;
-  --card-foreground: 0 0% 0%;
-  --secondary: 55 100% 50%;
-  --secondary-foreground: 0 0% 0%;
-  --muted: 0 0% 90%;
-  --muted-foreground: 0 0% 0%;
-  --destructive: 0 100% 45%;
-  --destructive-foreground: 0 0% 100%;
-  --accent: 270 100% 45%;
-  --accent-foreground: 0 0% 100%;
-  --border: 0 0% 0%;
+  --text-primary: #000000;
+  --text-secondary: #1a1a1a;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f0f0f0;
+  --border-color: #000000;
 }
 
-.high-contrast .text-muted-foreground {
-  color: #000000 !important;
+.high-contrast body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
-.high-contrast .bg-gray-50,
-.high-contrast .bg-gray-100 {
-  background-color: #ffffff !important;
+.high-contrast a {
+  color: #0000EE;
+  text-decoration: underline;
 }
 
-.high-contrast .text-gray-600,
-.high-contrast .text-gray-500 {
-  color: #000000 !important;
+.high-contrast a:visited {
+  color: #551A8B;
 }
 
-.high-contrast .border-gray-200 {
-  border-color: #000000 !important;
+.high-contrast button,
+.high-contrast .btn {
+  border: 2px solid var(--border-color);
 }
 
-/* Increase focus visibility */
-.high-contrast :focus {
-  outline: 3px solid #0044ff !important;
-  outline-offset: 2px !important;
+.high-contrast input,
+.high-contrast textarea,
+.high-contrast select {
+  border: 2px solid var(--border-color);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
-/* Text size adjustments */
-[data-text-size="large"] {
-  font-size: 1.1rem;
+/* Large text mode */
+.large-text {
+  --base-font-size: 18px;
 }
 
-[data-text-size="larger"] {
-  font-size: 1.2rem;
+.large-text body {
+  font-size: var(--base-font-size);
 }
 
-/* For screen readers */
-.screen-reader-optimized .sr-only {
+.large-text h1 {
+  font-size: calc(2em * var(--font-scale));
+}
+
+.large-text h2 {
+  font-size: calc(1.75em * var(--font-scale));
+}
+
+.large-text h3 {
+  font-size: calc(1.5em * var(--font-scale));
+}
+
+.large-text h4 {
+  font-size: calc(1.25em * var(--font-scale));
+}
+
+.large-text p, 
+.large-text span, 
+.large-text div, 
+.large-text li {
+  font-size: calc(1em * var(--font-scale));
+}
+
+.large-text label, 
+.large-text button, 
+.large-text input, 
+.large-text textarea {
+  font-size: calc(1em * var(--font-scale));
+}
+
+/* Font scaling for all elements */
+body {
+  font-size: calc(16px * var(--font-scale));
+}
+
+/* Screen reader only elements */
+.sr-only {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -114,42 +109,35 @@
   border-width: 0;
 }
 
-/* Reduced motion */
-.reduced-motion * {
-  transition: none !important;
-  animation: none !important;
-  scroll-behavior: auto !important;
+/* Accessibility announcement (Live region for screen readers) */
+.sr-announcement {
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
 }
 
-/* Add special focus styles for keyboard navigation */
-:focus-visible {
-  outline: 3px solid #0044ff;
-  outline-offset: 2px;
-  border-radius: 2px;
-}
-
-/* Increase button and interactive element sizes for better touch targets */
-.screen-reader-optimized button,
-.screen-reader-optimized a,
-.screen-reader-optimized input,
-.screen-reader-optimized select {
+/* Increased spacing for better click/tap targets */
+.large-text button,
+.large-text .btn, 
+.large-text input[type="checkbox"],
+.large-text input[type="radio"] {
   min-height: 44px;
   min-width: 44px;
 }
 
-/* Ensure link underlines for better visibility */
-.high-contrast a:not(.no-underline) {
-  text-decoration: underline;
+/* Improved spacing for better usability with motor impairments */
+.large-text li,
+.large-text button + button,
+.large-text .btn + .btn {
+  margin-top: 0.5em;
 }
 
-/* Make form field labels more prominent */
-.high-contrast label {
-  font-weight: bold;
-}
-
-/* Enhanced focus for input fields */
-input:focus,
-textarea:focus,
-select:focus {
-  box-shadow: 0 0 0 3px rgba(0, 68, 255, 0.5);
+/* Ensure text is selectable for assistive technology */
+.selectable-text {
+  user-select: text;
 }

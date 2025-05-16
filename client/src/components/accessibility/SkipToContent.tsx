@@ -1,45 +1,86 @@
-import React from 'react';
-import { useLocation } from 'wouter';
+import { useState, useEffect } from 'react';
 
-export default function SkipToContent() {
-  const [location] = useLocation();
+interface SkipToContentProps {
+  mainContentId?: string;
+  label?: string;
+}
+
+/**
+ * SkipToContent component - Allows keyboard users to skip navigation
+ * and go directly to the main content of the page.
+ * 
+ * This component should be placed at the very beginning of your page layout.
+ * Make sure the mainContentId matches an id on your main content container.
+ */
+export function SkipToContent({ 
+  mainContentId = 'main-content',
+  label = 'Skip to main content'
+}: SkipToContentProps) {
+  const [isVisible, setIsVisible] = useState(false);
   
-  // Identify potential skip targets based on current page
-  const getSkipTargets = () => {
-    if (location.includes('/projects/')) {
-      return [
-        { id: 'main-content', label: 'Skip to main content' },
-        { id: 'project-details', label: 'Skip to project details' },
-        { id: 'file-section', label: 'Skip to files' },
-        { id: 'messages-section', label: 'Skip to messages' }
-      ];
-    } else if (location.includes('/dashboard') || location === '/') {
-      return [
-        { id: 'main-content', label: 'Skip to main content' },
-        { id: 'stats-section', label: 'Skip to statistics' },
-        { id: 'projects-table', label: 'Skip to projects' },
-        { id: 'activity-section', label: 'Skip to activities' }
-      ];
-    }
+  // Handle keyboard focus
+  const handleFocus = () => setIsVisible(true);
+  const handleBlur = () => setIsVisible(false);
+  
+  // Handle click - focus the main content
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
     
-    // Default skip target
-    return [{ id: 'main-content', label: 'Skip to main content' }];
+    const mainContent = document.getElementById(mainContentId);
+    if (mainContent) {
+      // Set tabIndex temporarily if not focusable
+      const needsTabIndex = mainContent.tabIndex < 0;
+      
+      if (needsTabIndex) {
+        mainContent.tabIndex = -1;
+      }
+      
+      // Focus the element
+      mainContent.focus();
+      
+      // Scroll into view if needed
+      mainContent.scrollIntoView({ behavior: 'smooth' });
+      
+      // Remove temporary tabIndex
+      if (needsTabIndex) {
+        // Small delay to ensure focus happens before removing tabIndex
+        setTimeout(() => {
+          mainContent.removeAttribute('tabindex');
+        }, 100);
+      }
+    }
   };
   
-  const skipTargets = getSkipTargets();
-  
+  // Add keyboard event listener to handle showing the link on Tab press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Tab' && !e.shiftKey && document.activeElement === document.body) {
+        // User is tabbing from the browser UI into the page
+        setIsVisible(true);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
-    <div className="skip-links" aria-label="Skip navigation links">
-      {skipTargets.map((target) => (
-        <a 
-          key={target.id}
-          href={`#${target.id}`} 
-          className="skip-to-content focus-visible-ring"
-          data-testid={`skip-to-${target.id}`}
-        >
-          {target.label}
-        </a>
-      ))}
-    </div>
+    <a
+      href={`#${mainContentId}`}
+      className={`
+        fixed top-4 left-1/2 transform -translate-x-1/2 z-50
+        bg-primary-600 text-white px-4 py-3 rounded-md
+        focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary-600
+        transition-opacity duration-200
+        ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+      `}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      onClick={handleClick}
+      aria-label={label}
+      tabIndex={0}
+    >
+      {label}
+    </a>
   );
 }

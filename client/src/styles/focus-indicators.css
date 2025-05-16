@@ -1,59 +1,104 @@
-/* Focus indicators for better keyboard accessibility */
-.focus-visible-ring:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-  border-radius: 4px;
+/* Focus indicators for keyboard navigation accessibility */
+
+/* Global focus styles */
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
 }
 
-/* High contrast focus indicators for better visibility */
-.high-contrast .focus-visible-ring:focus-visible {
-  outline: 3px solid #ffff00;
-  outline-offset: 3px;
-}
-
-/* Enhanced focus indicators for table rows */
-tr:focus-visible,
-tr[tabindex="0"]:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: -1px;
-  position: relative;
-  z-index: 10;
-}
-
-.high-contrast tr:focus-visible,
-.high-contrast tr[tabindex="0"]:focus-visible {
-  outline: 3px solid #ffff00;
-  outline-offset: -2px;
-}
-
-/* Make the dropdown buttons more accessible when focused */
-.dropdown-trigger:focus-visible {
-  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--primary);
-}
-
-.high-contrast .dropdown-trigger:focus-visible {
-  box-shadow: 0 0 0 2px #000000, 0 0 0 4px #ffff00;
-}
-
-/* Make focus visible on interactive elements for keyboard users */
-button:focus-visible,
-[role="button"]:focus-visible,
+/* Focus styles for interactive elements */
 a:focus-visible,
-select:focus-visible,
+button:focus-visible,
 input:focus-visible,
-textarea:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--primary);
+textarea:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible,
+[tabindex="0"]:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  box-shadow: 0 0 0 var(--focus-ring-offset) rgba(37, 99, 235, 0.3);
+  border-radius: 0.25rem;
+  position: relative;
+  z-index: 1;
 }
 
-.high-contrast button:focus-visible,
-.high-contrast [role="button"]:focus-visible,
+/* Higher contrast focus indicators for high contrast mode */
 .high-contrast a:focus-visible,
-.high-contrast select:focus-visible,
+.high-contrast button:focus-visible,
 .high-contrast input:focus-visible,
-.high-contrast textarea:focus-visible {
-  outline: 3px solid #ffff00;
+.high-contrast textarea:focus-visible,
+.high-contrast select:focus-visible,
+.high-contrast [role="button"]:focus-visible,
+.high-contrast [tabindex="0"]:focus-visible {
+  outline: 3px solid black;
   outline-offset: 3px;
-  box-shadow: 0 0 0 2px #000000, 0 0 0 4px #ffff00;
+  box-shadow: 0 0 0 6px white;
+}
+
+/* Focus style for cards and larger clickable areas */
+.card:focus-visible,
+.clickable-container:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  box-shadow: 0 0 0 var(--focus-ring-offset) rgba(37, 99, 235, 0.3);
+}
+
+/* Don't remove focus styles for mouse users who may also use keyboard */
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible),
+select:focus:not(:focus-visible) {
+  outline: 0;
+  box-shadow: none;
+}
+
+/* Skip link focus visible */
+.skip-link:focus-visible {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transform: translateY(0) !important;
+}
+
+/* Ensure action icons have visible focus state */
+.action-icon:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: 50%;
+}
+
+/* Make sure form controls have consistent focus styles */
+.form-control:focus-visible {
+  border-color: var(--focus-ring-color);
+  box-shadow: 0 0 0 var(--focus-ring-offset) rgba(37, 99, 235, 0.3);
+}
+
+/* Custom modal focus style */
+.modal:focus-visible,
+.dialog:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  border-radius: 0.5rem;
+}
+
+/* Enhanced focus for file upload components */
+.file-drop-area:focus-visible {
+  outline: var(--focus-ring-width) dashed var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  background-color: rgba(37, 99, 235, 0.05);
+}
+
+/* Focus style for tabs and navigation items */
+.tab:focus-visible,
+.nav-item:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: 0.25rem;
+  text-decoration: underline;
+}
+
+/* Focus style for sidebar navigation */
+.sidebar-nav-item:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 0;
+  background-color: rgba(37, 99, 235, 0.1);
 }

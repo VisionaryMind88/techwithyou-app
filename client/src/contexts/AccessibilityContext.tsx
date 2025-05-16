@@ -1,160 +1,173 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-type AccessibilityMode = 'default' | 'high-contrast' | 'reduced-motion';
-type TextSize = 'default' | 'large' | 'larger';
+// Import our accessibility CSS files
+import '../styles/accessibility.css';
+import '../styles/focus-indicators.css';
 
-interface AccessibilityContextType {
-  mode: AccessibilityMode;
-  textSize: TextSize;
-  isScreenReaderOptimized: boolean;
-  isHighContrast: boolean;
-  isReducedMotion: boolean;
-  setMode: (mode: AccessibilityMode) => void;
-  setTextSize: (size: TextSize) => void;
-  toggleScreenReaderOptimization: () => void;
-  toggleHighContrast: () => void;
-  toggleReducedMotion: () => void;
+// Type for our accessibility settings
+interface AccessibilitySettings {
+  reducedMotion: boolean;
+  highContrast: boolean;
+  largeText: boolean;
+  fontScale: number;
 }
 
-const AccessibilityContext = createContext<AccessibilityContextType | undefined>(undefined);
-
-export const useAccessibility = () => {
-  const context = useContext(AccessibilityContext);
-  if (!context) {
-    throw new Error('useAccessibility must be used within an AccessibilityProvider');
-  }
-  return context;
+// Default accessibility settings
+const defaultSettings: AccessibilitySettings = {
+  reducedMotion: false,
+  highContrast: false,
+  largeText: false,
+  fontScale: 1.0,
 };
 
-interface AccessibilityProviderProps {
-  children: React.ReactNode;
+// Local storage key
+const STORAGE_KEY = 'tech-with-you-accessibility-settings';
+
+// Context type definition
+interface AccessibilityContextType {
+  settings: AccessibilitySettings;
+  setReducedMotion: (value: boolean) => void;
+  setHighContrast: (value: boolean) => void;
+  setLargeText: (value: boolean) => void;
+  setFontScale: (value: number) => void;
+  resetSettings: () => void;
+  updateSettings: (updates: Partial<AccessibilitySettings>) => void;
 }
 
-export const AccessibilityProvider: React.FC<AccessibilityProviderProps> = ({ children }) => {
-  // Load settings from localStorage if available
-  const [mode, setMode] = useState<AccessibilityMode>(() => {
-    const savedMode = localStorage.getItem('accessibility-mode');
-    return (savedMode as AccessibilityMode) || 'default';
-  });
-  
-  const [textSize, setTextSize] = useState<TextSize>(() => {
-    const savedSize = localStorage.getItem('accessibility-text-size');
-    return (savedSize as TextSize) || 'default';
-  });
-  
-  const [isScreenReaderOptimized, setIsScreenReaderOptimized] = useState<boolean>(() => {
-    return localStorage.getItem('accessibility-screen-reader') === 'true';
-  });
+// Create the context
+const AccessibilityContext = createContext<AccessibilityContextType | undefined>(undefined);
 
-  const [isHighContrast, setIsHighContrast] = useState<boolean>(() => {
-    return localStorage.getItem('accessibility-high-contrast') === 'true' || mode === 'high-contrast';
-  });
+// Provider component
+export function AccessibilityProvider({ children }: { children: ReactNode }) {
+  const [settings, setSettings] = useState<AccessibilitySettings>(defaultSettings);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  const [isReducedMotion, setIsReducedMotion] = useState<boolean>(() => {
-    return localStorage.getItem('accessibility-reduced-motion') === 'true' || mode === 'reduced-motion';
-  });
-
-  // Effect to check for prefers-reduced-motion
+  // Load saved settings on initial render
   useEffect(() => {
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion && !isReducedMotion) {
-      setIsReducedMotion(true);
-      setMode('reduced-motion');
+    try {
+      const savedSettings = localStorage.getItem(STORAGE_KEY);
+      if (savedSettings) {
+        setSettings(JSON.parse(savedSettings));
+      } else {
+        // Check for user OS preferences if no settings are saved
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const prefersColorScheme = window.matchMedia('(prefers-color-scheme: high-contrast)').matches;
+        
+        if (prefersReducedMotion || prefersColorScheme) {
+          setSettings(prev => ({
+            ...prev,
+            reducedMotion: prefersReducedMotion || prev.reducedMotion,
+            highContrast: prefersColorScheme || prev.highContrast,
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading accessibility settings:', error);
+    } finally {
+      setIsInitialized(true);
     }
   }, []);
 
-  // Effect to handle mode changes
+  // Apply settings to document elements
   useEffect(() => {
-    localStorage.setItem('accessibility-mode', mode);
+    if (!isInitialized) return;
     
-    // Set related settings based on mode
-    if (mode === 'high-contrast') {
-      setIsHighContrast(true);
-      localStorage.setItem('accessibility-high-contrast', 'true');
-      document.documentElement.classList.add('high-contrast');
-    } else if (mode === 'reduced-motion') {
-      setIsReducedMotion(true);
-      localStorage.setItem('accessibility-reduced-motion', 'true');
-      document.documentElement.classList.add('reduced-motion');
+    // Save to localStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+
+    // Apply settings to the document
+    const html = document.documentElement;
+    
+    // Reduced motion
+    if (settings.reducedMotion) {
+      html.style.setProperty('--animation-duration', '0s');
+      html.classList.add('reduce-motion');
     } else {
-      // Default mode - respect individual settings
-      document.documentElement.classList.remove('high-contrast', 'reduced-motion');
+      html.style.removeProperty('--animation-duration');
+      html.classList.remove('reduce-motion');
     }
-  }, [mode]);
-
-  // Effects to handle individual settings
-  useEffect(() => {
-    localStorage.setItem('accessibility-text-size', textSize);
-    document.documentElement.dataset.textSize = textSize;
-  }, [textSize]);
-
-  useEffect(() => {
-    localStorage.setItem('accessibility-screen-reader', isScreenReaderOptimized.toString());
-    if (isScreenReaderOptimized) {
-      document.documentElement.setAttribute('role', 'application');
-      document.documentElement.classList.add('screen-reader-optimized');
+    
+    // High contrast
+    if (settings.highContrast) {
+      html.classList.add('high-contrast');
     } else {
-      document.documentElement.removeAttribute('role');
-      document.documentElement.classList.remove('screen-reader-optimized');
+      html.classList.remove('high-contrast');
     }
-  }, [isScreenReaderOptimized]);
-
-  useEffect(() => {
-    localStorage.setItem('accessibility-high-contrast', isHighContrast.toString());
-    if (isHighContrast) {
-      document.documentElement.classList.add('high-contrast');
-    } else if (mode !== 'high-contrast') {
-      document.documentElement.classList.remove('high-contrast');
+    
+    // Large text
+    if (settings.largeText) {
+      html.classList.add('large-text');
+    } else {
+      html.classList.remove('large-text');
     }
-  }, [isHighContrast, mode]);
+    
+    // Font scale
+    html.style.setProperty('--font-scale', settings.fontScale.toString());
+    
+  }, [settings, isInitialized]);
 
-  useEffect(() => {
-    localStorage.setItem('accessibility-reduced-motion', isReducedMotion.toString());
-    if (isReducedMotion) {
-      document.documentElement.classList.add('reduced-motion');
-    } else if (mode !== 'reduced-motion') {
-      document.documentElement.classList.remove('reduced-motion');
-    }
-  }, [isReducedMotion, mode]);
-
-  const toggleScreenReaderOptimization = () => {
-    setIsScreenReaderOptimized(prev => !prev);
+  // Setter functions
+  const setReducedMotion = (value: boolean) => {
+    setSettings(prev => ({ ...prev, reducedMotion: value }));
   };
 
-  const toggleHighContrast = () => {
-    setIsHighContrast(prev => !prev);
-    if (!isHighContrast) {
-      setMode('high-contrast');
-    } else if (mode === 'high-contrast') {
-      setMode('default');
-    }
+  const setHighContrast = (value: boolean) => {
+    setSettings(prev => ({ ...prev, highContrast: value }));
   };
 
-  const toggleReducedMotion = () => {
-    setIsReducedMotion(prev => !prev);
-    if (!isReducedMotion) {
-      setMode('reduced-motion');
-    } else if (mode === 'reduced-motion') {
-      setMode('default');
-    }
+  const setLargeText = (value: boolean) => {
+    setSettings(prev => ({ ...prev, largeText: value }));
   };
 
+  const setFontScale = (value: number) => {
+    setSettings(prev => ({ ...prev, fontScale: value }));
+  };
+
+  const resetSettings = () => {
+    setSettings(defaultSettings);
+  };
+
+  const updateSettings = (updates: Partial<AccessibilitySettings>) => {
+    setSettings(prev => ({ ...prev, ...updates }));
+  };
+
+  // Context value
   const value = {
-    mode,
-    textSize,
-    isScreenReaderOptimized,
-    isHighContrast,
-    isReducedMotion,
-    setMode,
-    setTextSize,
-    toggleScreenReaderOptimization,
-    toggleHighContrast,
-    toggleReducedMotion
+    settings,
+    setReducedMotion,
+    setHighContrast,
+    setLargeText,
+    setFontScale,
+    resetSettings,
+    updateSettings,
   };
 
   return (
     <AccessibilityContext.Provider value={value}>
       {children}
+      <div 
+        id="accessibility-announcement" 
+        className="sr-only" 
+        aria-live="polite" 
+        aria-atomic="true"
+      ></div>
     </AccessibilityContext.Provider>
   );
-};
+}
+
+// Hook for using accessibility context
+export function useAccessibility() {
+  const context = useContext(AccessibilityContext);
+  if (context === undefined) {
+    throw new Error('useAccessibility must be used within an AccessibilityProvider');
+  }
+  return context;
+}
+
+// Utility function to announce messages to screen readers
+export function announceToScreenReader(message: string) {
+  const announcement = document.getElementById('accessibility-announcement');
+  if (announcement) {
+    announcement.textContent = message;
+  }
+}
