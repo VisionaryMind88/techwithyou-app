@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { 
   Globe, 
   Activity, 
@@ -22,6 +23,7 @@ export function LiveTrackingSidebar() {
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const { user, isAuthenticated } = useAuth();
+  const { t } = useLanguage();
   
   const { data: trackingData, isLoading } = useQuery({
     queryKey: ["/api/tracking"],
@@ -42,15 +44,15 @@ export function LiveTrackingSidebar() {
         <AccordionItem value="live-tracking" className="border-none">
           <AccordionTrigger className="py-2 text-sm hover:no-underline text-white">
             <div className="flex items-center">
-              <Activity className="mr-2 h-4 w-4 text-green-300" />
-              <span className="text-green-100 font-medium">Live Tracking</span>
+              <Activity className="mr-2 h-4 w-4 text-blue-300" />
+              <span className="text-blue-100 font-medium">{t('tracking.title')}</span>
               {activeItems.length > 0 && (
                 <Badge 
                   variant="outline" 
-                  className="ml-2 bg-green-600 text-white border-green-400 hover:bg-green-500 shadow-lg transform translate-z-1"
+                  className="ml-2 bg-blue-600 text-white border-blue-400 hover:bg-blue-500 shadow-lg transform translate-z-1"
                   style={{
                     textShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                    boxShadow: '0 3px 10px rgba(0, 255, 0, 0.2), 0 0 3px rgba(0, 255, 0, 0.3)',
+                    boxShadow: '0 3px 10px rgba(0, 157, 255, 0.2), 0 0 3px rgba(0, 157, 255, 0.3)',
                     transform: 'translateY(-1px)'
                   }}
                 >
@@ -59,22 +61,22 @@ export function LiveTrackingSidebar() {
               )}
             </div>
           </AccordionTrigger>
-          <AccordionContent className="pb-1 pt-1 bg-green-700 rounded-md mx-1 shadow-inner" style={{ boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)' }}>
+          <AccordionContent className="pb-1 pt-1 bg-blue-700 rounded-md mx-1 shadow-inner" style={{ boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)' }}>
             {/* Search Input */}
             <div className="mb-2 px-1">
               <div className="relative">
-                <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-green-300" />
+                <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-300" />
                 <Input
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search tracking items..."
-                  className="h-8 w-full pl-8 text-xs bg-green-800 border-green-600 text-white placeholder:text-green-300"
+                  placeholder={t('tracking.searchPlaceholder') || "Search tracking items..."}
+                  className="h-8 w-full pl-8 text-xs bg-blue-800 border-blue-600 text-white placeholder:text-blue-300"
                 />
                 {searchTerm && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="absolute right-0 top-0 h-full px-2 py-0 text-green-300 hover:text-white hover:bg-transparent"
+                    className="absolute right-0 top-0 h-full px-2 py-0 text-blue-300 hover:text-white hover:bg-transparent"
                     onClick={() => setSearchTerm('')}
                   >
                     ×
@@ -85,30 +87,30 @@ export function LiveTrackingSidebar() {
             
             {isLoading ? (
               <div className="flex items-center justify-center py-4">
-                <CircleDashed className="h-5 w-5 animate-spin text-green-300" />
+                <CircleDashed className="h-5 w-5 animate-spin text-blue-300" />
               </div>
             ) : activeItems.length === 0 ? (
-              <div className="px-2 py-3 text-sm text-green-300 text-center">
-                {searchTerm ? "No matching tracking items" : "No active tracking items"}
+              <div className="px-2 py-3 text-sm text-blue-300 text-center">
+                {searchTerm ? t('tracking.noMatchingItems') || "No matching tracking items" : t('tracking.noItems') || "No active tracking items"}
               </div>
             ) : (
               <div className="space-y-1">
                 {activeItems.map((item: any) => (
                   <div 
                     key={item.id} 
-                    className="group flex items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-green-600 bg-green-800 mb-1 shadow-md"
+                    className="group flex items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-blue-600 bg-blue-800 mb-1 shadow-md"
                     style={{ 
                       transform: 'translateZ(5px)', 
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.2), 0 0 1px rgba(0,255,0,0.3)',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.2), 0 0 1px rgba(0,157,255,0.3)',
                       transition: 'all 0.2s ease',
                       position: 'relative'
                     }}
                   >
                     <div className="flex items-center truncate">
                       {item.type === "website" ? (
-                        <Globe className="mr-2 h-4 w-4 flex-shrink-0 text-green-300" />
+                        <Globe className="mr-2 h-4 w-4 flex-shrink-0 text-blue-300" />
                       ) : (
-                        <Activity className="mr-2 h-4 w-4 flex-shrink-0 text-green-300" />
+                        <Activity className="mr-2 h-4 w-4 flex-shrink-0 text-blue-300" />
                       )}
                       <span className="truncate text-white">{item.name}</span>
                     </div>
@@ -118,7 +120,7 @@ export function LiveTrackingSidebar() {
                       rel="noopener noreferrer"
                       className="ml-2 flex-shrink-0 opacity-50 group-hover:opacity-100"
                     >
-                      <ExternalLink className="h-4 w-4 text-green-300 hover:text-white" />
+                      <ExternalLink className="h-4 w-4 text-blue-300 hover:text-white" />
                     </a>
                   </div>
                 ))}
@@ -132,7 +134,7 @@ export function LiveTrackingSidebar() {
                 className="mt-2 w-full justify-start text-xs text-muted-foreground"
                 onClick={() => setIsTrackingModalOpen(true)}
               >
-                Manage tracking items
+                {t('tracking.manageItems') || "Manage tracking items"}
               </Button>
             )}
           </AccordionContent>
@@ -143,9 +145,9 @@ export function LiveTrackingSidebar() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="max-h-[90vh] w-[90vw] max-w-3xl overflow-auto rounded-lg bg-white p-6">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold">Manage Live Tracking</h2>
+              <h2 className="text-xl font-bold">{t('tracking.manageTitle') || "Manage Live Tracking"}</h2>
               <Button variant="ghost" size="sm" onClick={() => setIsTrackingModalOpen(false)}>
-                Close
+                {t('common.close') || "Close"}
               </Button>
             </div>
             <LiveTracker />
