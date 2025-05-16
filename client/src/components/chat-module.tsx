@@ -14,10 +14,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Paperclip, Send, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { Message, User, Project, InsertMessage } from "@shared/schema";
+import { Message, User, Project, InsertMessage, Payment } from "@shared/schema";
 import { useAuth } from "@/context/auth-context";
 import { chatWebSocket } from "@/lib/websocket";
 import { apiRequest } from "@/lib/queryClient";
+import { PaymentRequest } from "@/components/messages/payment-request";
 
 interface ChatMessageProps {
   message: Message & { sender: User };
@@ -27,7 +28,13 @@ interface ChatMessageProps {
 function ChatMessage({ message, currentUserId }: ChatMessageProps) {
   const isCurrentUser = message.senderId === currentUserId;
   const timestamp = formatDistanceToNow(new Date(message.createdAt), { addSuffix: true });
-
+  
+  // Check if the message contains a payment request
+  const hasPaymentRequest = message.attachments && 
+    typeof message.attachments === 'object' && 
+    !Array.isArray(message.attachments) && 
+    message.attachments.type === 'payment_request';
+  
   return (
     <div className={`flex items-start mb-4 ${isCurrentUser ? "flex-row-reverse" : ""}`}>
       {!isCurrentUser && (
@@ -38,7 +45,7 @@ function ChatMessage({ message, currentUserId }: ChatMessageProps) {
         </Avatar>
       )}
       
-      <div className={`${isCurrentUser ? "mr-3" : "ml-3"} max-w-[80%]`}>
+      <div className={`${isCurrentUser ? "mr-3" : "ml-3"} max-w-[80%] ${hasPaymentRequest ? "w-full" : ""}`}>
         <div className={`p-3 rounded-lg ${
           isCurrentUser ? "bg-primary-600" : "bg-gray-100"
         }`}>
@@ -48,7 +55,8 @@ function ChatMessage({ message, currentUserId }: ChatMessageProps) {
             {message.content}
           </p>
           
-          {message.attachments && message.attachments.length > 0 && (
+          {/* File attachments */}
+          {message.attachments && Array.isArray(message.attachments) && message.attachments.length > 0 && (
             <div className="mt-2">
               {message.attachments.map((file: any, index: number) => (
                 <div 
@@ -85,6 +93,18 @@ function ChatMessage({ message, currentUserId }: ChatMessageProps) {
             </div>
           )}
         </div>
+        
+        {/* Payment Request */}
+        {hasPaymentRequest && message.attachments && typeof message.attachments === 'object' && (
+          <PaymentRequest 
+            messageId={message.id}
+            projectId={message.projectId}
+            amount={message.attachments.amount}
+            description={message.attachments.description}
+            status={message.attachments.status || "pending"}
+            paymentId={message.attachments.paymentId}
+          />
+        )}
         
         <span className={`text-xs text-gray-500 mt-1 ${
           isCurrentUser ? "text-right block" : ""

@@ -46,24 +46,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { ChevronDown, MoreVertical, PlusCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { PaymentRequestForm } from "./payment-request-form";
 
 // Status badges
 const PaymentStatusBadge = ({ status }: { status: string }) => {
@@ -93,17 +80,7 @@ const PaymentStatusBadge = ({ status }: { status: string }) => {
   );
 };
 
-// Payment creation form schema
-const paymentFormSchema = z.object({
-  amount: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
-    message: "Amount must be a positive number",
-  }),
-  projectId: z.string(),
-  userId: z.string(),
-  description: z.string().min(5, "Description is required"),
-});
-
-type PaymentFormValues = z.infer<typeof paymentFormSchema>;
+// No longer needed as we're using the PaymentRequestForm component
 
 export function PaymentTab() {
   const [isNewPaymentOpen, setIsNewPaymentOpen] = useState(false);
