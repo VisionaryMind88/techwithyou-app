@@ -118,8 +118,8 @@ export function PaymentRequestForm({
     }
   };
   
-  // Filter users to only show customers
-  const customerUsers = users.filter(user => user.role === 'customer' || user.role === 'user');
+  // Filter users to only show customers (non-admin users)
+  const customerUsers = users.filter(user => user.email !== "admin@example.com");
 
   return (
     <Form {...form}>
