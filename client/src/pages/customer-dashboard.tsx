@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Sidebar } from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -36,6 +36,7 @@ export default function CustomerDashboard() {
   const [showTour, setShowTour] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const [location, setLocation] = useLocation();
 
   // Check if onboarding tour should be shown
   useEffect(() => {
@@ -373,13 +374,14 @@ export default function CustomerDashboard() {
                           >
                             <MessageSquare className="h-3.5 w-3.5 mr-1" /> Chat
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => navigate(`/projects/${project.id}`)}
-                          >
-                            Details
-                          </Button>
+                          <Link href={`/projects/${project.id}`}>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                            >
+                              Details
+                            </Button>
+                          </Link>
                         </div>
                       </div>
                     </Card>
