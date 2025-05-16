@@ -20,6 +20,9 @@ import { useAuth, AuthProvider } from "./context/auth-context";
 import { ThemeProvider } from "next-themes";
 import { handleAuthRedirect } from "./lib/firebase";
 import { useToast } from "./hooks/use-toast";
+import { AccessibilityProvider } from "./contexts/AccessibilityContext";
+import SkipToContent from "./components/accessibility/SkipToContent";
+import AccessibilitySettings from "./components/accessibility/AccessibilitySettings";
 
 // Component to handle auth redirects
 function AuthRedirectHandler() {
@@ -126,15 +129,19 @@ function Router() {
 function App() {
   return (
     <AuthProvider>
-      <ThemeProvider attribute="class" defaultTheme="light">
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <Toaster />
-            <AuthRedirectHandler />
-            <Router />
-          </TooltipProvider>
-        </QueryClientProvider>
-      </ThemeProvider>
+      <AccessibilityProvider>
+        <ThemeProvider attribute="class" defaultTheme="light">
+          <QueryClientProvider client={queryClient}>
+            <TooltipProvider>
+              <SkipToContent />
+              <Toaster />
+              <AuthRedirectHandler />
+              <Router />
+              <AccessibilitySettings />
+            </TooltipProvider>
+          </QueryClientProvider>
+        </ThemeProvider>
+      </AccessibilityProvider>
     </AuthProvider>
   );
 }
