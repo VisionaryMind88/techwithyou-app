@@ -1,70 +1,54 @@
 import { db } from "../server/db";
-import { users, insertUserSchema } from "../shared/schema";
-import { hash } from "bcrypt";
-import { eq } from "drizzle-orm";
+import { users } from "../shared/schema";
+import bcrypt from "bcrypt";
 
 async function createTestUsers() {
   try {
-    // Create an admin user
-    const adminHashedPassword = await hash("Admin@123", 10);
-    const adminUser = {
-      email: "admin@techwithyou.com",
-      password: adminHashedPassword,
+    console.log("Creating test users...");
+    
+    // Create admin user
+    const adminPassword = "Admin123!";
+    const hashedAdminPassword = await bcrypt.hash(adminPassword, 10);
+    
+    await db.insert(users).values({
+      email: "admin@example.com",
+      password: hashedAdminPassword,
       firstName: "Admin",
       lastName: "User",
-      role: "admin",
-      provider: "local",
-      providerId: null,
-      rememberToken: null,
-      createdAt: new Date()
-    };
-
-    // Create a customer user
-    const customerHashedPassword = await hash("Customer@123", 10);
-    const customerUser = {
-      email: "customer@techwithyou.com",
-      password: customerHashedPassword,
-      firstName: "Customer",
-      lastName: "User",
-      role: "customer",
-      provider: "local",
-      providerId: null,
-      rememberToken: null,
-      createdAt: new Date()
-    };
-
-    // Insert users, skipping if they already exist
-    const existingAdmin = await db.select().from(users).where(eq(users.email, adminUser.email));
-    
-    if (existingAdmin.length === 0) {
-      console.log("Creating admin user...");
-      await db.insert(users).values(adminUser);
-      console.log("Admin user created successfully!");
-    } else {
-      console.log("Admin user already exists.");
-    }
-
-    const existingCustomer = await db.select().from(users).where(eq(users.email, customerUser.email));
-    
-    if (existingCustomer.length === 0) {
-      console.log("Creating customer user...");
-      await db.insert(users).values(customerUser);
-      console.log("Customer user created successfully!");
-    } else {
-      console.log("Customer user already exists.");
-    }
-
-    // Fetch and display all users
-    const allUsers = await db.select().from(users);
-    console.log("All users in the database:");
-    allUsers.forEach(user => {
-      console.log(`- ${user.email} (${user.role})`);
+      role: "admin"
+    }).onConflictDoUpdate({
+      target: users.email,
+      set: {
+        password: hashedAdminPassword,
+        firstName: "Admin",
+        lastName: "User",
+        role: "admin"
+      }
     });
-
-    console.log("\nYou can now log in with:");
-    console.log("Admin: admin@techwithyou.com / Admin@123");
-    console.log("Customer: customer@techwithyou.com / Customer@123");
-
+    
+    // Create regular user
+    const userPassword = "Customer123!";
+    const hashedUserPassword = await bcrypt.hash(userPassword, 10);
+    
+    await db.insert(users).values({
+      email: "user@example.com",
+      password: hashedUserPassword,
+      firstName: "Regular",
+      lastName: "User",
+      role: "customer"
+    }).onConflictDoUpdate({
+      target: users.email,
+      set: {
+        password: hashedUserPassword,
+        firstName: "Regular",
+        lastName: "User",
+        role: "customer"
+      }
+    });
+    
+    console.log("Test users created successfully!");
+    console.log("Admin login: admin@example.com / Admin123!");
+    console.log("User login: user@example.com / Customer123!");
   } catch (error) {
     console.error("Error creating test users:", error);
   } finally {
