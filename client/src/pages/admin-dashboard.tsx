@@ -4,10 +4,14 @@ import { AdminDashboardStats } from "@/components/admin/dashboard-stats";
 import { ProjectTable } from "@/components/admin/project-table";
 import { ActivityList } from "@/components/admin/activity-list";
 import { AdminMessagesList } from "@/components/admin/messages-list";
+import { ProjectAnalytics } from "@/components/admin/project-analytics";
+import { PerformanceMetrics } from "@/components/admin/performance-metrics";
+import { UserAnalytics } from "@/components/admin/user-analytics";
 import { Sidebar } from "@/components/sidebar";
 import { ChatModule } from "@/components/chat-module";
 import { Button } from "@/components/ui/button";
-import { Menu, Bell, MessageSquare, ActivityIcon } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Menu, Bell, MessageSquare, ActivityIcon, BarChart } from "lucide-react";
 import { OnboardingTour, adminTourSteps } from "@/components/onboarding-tour";
 import { useAuth } from "@/context/auth-context";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -148,6 +152,15 @@ export default function AdminDashboard() {
     isLoading: isLoadingMessages 
   } = useQuery<Array<Message & { sender: User, project: Project }>>({
     queryKey: ['/api/messages/admin/unread'],
+    enabled: !!user?.id && user?.role === "admin"
+  });
+  
+  // Fetch all users for analytics
+  const { 
+    data: usersData = [], 
+    isLoading: isLoadingUsers 
+  } = useQuery<User[]>({
+    queryKey: ['/api/users/admin'],
     enabled: !!user?.id && user?.role === "admin"
   });
 
@@ -398,7 +411,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Customer Activity & Messages */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               {/* Customer Activity */}
               <div id="customers-section">
                 <div className="flex justify-between items-center mb-4">
@@ -425,6 +438,46 @@ export default function AdminDashboard() {
                   onReply={handleMessageReply}
                 />
               </div>
+            </div>
+            
+            {/* Advanced Analytics Section */}
+            <div className="mb-6">
+              <div className="flex items-center mb-4">
+                <BarChart className="h-5 w-5 mr-2 text-primary-600" />
+                <h2 className="text-xl font-semibold text-gray-800">Advanced Analytics</h2>
+              </div>
+              
+              <Tabs defaultValue="projects" className="w-full mb-8">
+                <TabsList className="grid w-full grid-cols-3 mb-4">
+                  <TabsTrigger value="projects">Project Analytics</TabsTrigger>
+                  <TabsTrigger value="performance">Performance Metrics</TabsTrigger>
+                  <TabsTrigger value="users">User Analytics</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="projects">
+                  <ProjectAnalytics 
+                    projects={projectsData} 
+                    isLoading={isLoadingProjects}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="performance">
+                  <PerformanceMetrics 
+                    projects={projectsData}
+                    messages={messagesData}
+                    activities={activitiesData}
+                    isLoading={isLoadingProjects || isLoadingMessages || isLoadingActivities}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="users">
+                  <UserAnalytics 
+                    users={usersData}
+                    projects={projectsData}
+                    isLoading={isLoadingUsers || isLoadingProjects}
+                  />
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
         </main>
