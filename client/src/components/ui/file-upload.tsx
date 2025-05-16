@@ -118,13 +118,22 @@ export function FileUpload({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
+        role="region" 
+        aria-label="File upload area"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            fileInputRef.current?.click();
+          }
+        }}
       >
         <div className="space-y-1 text-center">
-          <Upload className="mx-auto h-12 w-12 text-gray-400" />
-          <div className="flex text-sm text-gray-600">
+          <Upload className="mx-auto h-12 w-12 text-gray-600" aria-hidden="true" />
+          <div className="flex text-sm text-gray-700">
             <label
               htmlFor="file-upload"
-              className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
+              className="relative cursor-pointer bg-white rounded-md font-medium text-primary-700 hover:text-primary-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
             >
               <span>Upload files</span>
               <input
@@ -136,27 +145,34 @@ export function FileUpload({
                 multiple
                 accept={acceptedTypes}
                 onChange={handleFileInput}
+                aria-label="Select files to upload"
               />
             </label>
             <p className="pl-1">or drag and drop</p>
           </div>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-700">
             Support for multiple files up to {formatBytes(maxSize)} each
           </p>
         </div>
       </div>
 
       {selectedFiles.length > 0 && (
-        <div className="mt-4 space-y-2">
-          <p className="text-sm font-medium text-gray-700">Selected files:</p>
-          <ul className="divide-y divide-gray-200 border rounded-md">
+        <div className="mt-4 space-y-2" id="selected-files-section">
+          <h3 className="text-sm font-medium text-gray-700">Selected files:</h3>
+          <ul 
+            className="divide-y divide-gray-200 border rounded-md" 
+            aria-label="Selected files for upload"
+            role="list"
+          >
             {selectedFiles.map((file, index) => (
               <li key={index} className="flex items-center justify-between py-3 px-4">
                 <div className="flex items-center">
-                  <File className="h-5 w-5 text-gray-400 mr-2" />
+                  <File className="h-5 w-5 text-gray-600 mr-2" aria-hidden="true" />
                   <div>
                     <p className="text-sm font-medium text-gray-700 truncate max-w-xs">{file.name}</p>
-                    <p className="text-xs text-gray-500">{formatBytes(file.size)}</p>
+                    <p className="text-xs text-gray-700" aria-label={`File size: ${formatBytes(file.size)}`}>
+                      {formatBytes(file.size)}
+                    </p>
                   </div>
                 </div>
                 <Button
@@ -166,8 +182,10 @@ export function FileUpload({
                     e.stopPropagation();
                     removeFile(index);
                   }}
+                  aria-label={`Remove file: ${file.name}`}
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-4 w-4" aria-hidden="true" />
+                  <span className="sr-only">Remove</span>
                 </Button>
               </li>
             ))}

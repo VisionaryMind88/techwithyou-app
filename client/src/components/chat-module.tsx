@@ -36,9 +36,13 @@ function ChatMessage({ message, currentUserId }: ChatMessageProps) {
     message.attachments.type === 'payment_request';
   
   return (
-    <div className={`flex items-start mb-4 ${isCurrentUser ? "flex-row-reverse" : ""}`}>
+    <div 
+      className={`flex items-start mb-4 ${isCurrentUser ? "flex-row-reverse" : ""}`}
+      role="listitem"
+      aria-label={`Message from ${isCurrentUser ? 'you' : message.sender.firstName || message.sender.email}`}
+    >
       {!isCurrentUser && (
-        <Avatar className="h-8 w-8">
+        <Avatar className="h-8 w-8" aria-hidden="true">
           <AvatarFallback>
             {message.sender.firstName?.[0] || message.sender.email?.[0] || '?'}
           </AvatarFallback>
@@ -46,9 +50,12 @@ function ChatMessage({ message, currentUserId }: ChatMessageProps) {
       )}
       
       <div className={`${isCurrentUser ? "mr-3" : "ml-3"} max-w-[80%] ${hasPaymentRequest ? "w-full" : ""}`}>
-        <div className={`p-3 rounded-lg ${
-          isCurrentUser ? "bg-primary-600" : "bg-gray-100"
-        }`}>
+        <div 
+          className={`p-3 rounded-lg ${
+            isCurrentUser ? "bg-primary-600" : "bg-gray-100"
+          }`}
+          aria-live={isCurrentUser ? "off" : "polite"}
+        >
           <p className={`text-sm ${
             isCurrentUser ? "text-white" : "text-gray-800"
           }`}>
@@ -260,46 +267,63 @@ export function ChatModule({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg p-0 h-[80vh] max-h-[600px] flex flex-col">
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={open => !open && onClose()}
+      aria-labelledby="chat-dialog-title"
+      aria-describedby="chat-dialog-description"
+    >
+      <DialogContent 
+        className="sm:max-w-lg p-0 h-[80vh] max-h-[600px] flex flex-col"
+        role="dialog"
+        aria-modal="true"
+      >
         {/* Header */}
         <div className="bg-primary-600 px-4 py-3 flex justify-between items-center">
           <div>
-            <h3 className="text-lg leading-6 font-medium text-white">Project Chat</h3>
-            <p className="text-sm text-primary-100">{projectName}</p>
+            <h3 id="chat-dialog-title" className="text-lg leading-6 font-medium text-white">Project Chat</h3>
+            <p id="chat-dialog-description" className="text-sm text-primary-100">{projectName}</p>
           </div>
           <Button 
             size="sm" 
             variant="ghost" 
             className="text-white hover:text-gray-200 p-1 h-auto"
             onClick={onClose}
+            aria-label="Close chat"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </Button>
         </div>
         
         {/* Chat Messages */}
-        <div className="p-4 overflow-y-auto flex-1">
+        <div 
+          className="p-4 overflow-y-auto flex-1"
+          aria-label="Chat messages"
+          role="log"
+          aria-live="polite"
+        >
           {Object.entries(messagesByDate).map(([date, dateMessages]) => (
             <div key={date}>
               <TimestampDivider date={new Date(date)} />
-              {dateMessages.map(message => (
-                <ChatMessage 
-                  key={message.id} 
-                  message={message} 
-                  currentUserId={user?.id || 0} 
-                />
-              ))}
+              <div role="list" aria-label={`Messages from ${new Date(date).toLocaleDateString()}`}>
+                {dateMessages.map(message => (
+                  <ChatMessage 
+                    key={message.id} 
+                    message={message} 
+                    currentUserId={user?.id || 0} 
+                  />
+                ))}
+              </div>
             </div>
           ))}
           
           {messages.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-600" aria-live="polite">
               <p>No messages yet. Start the conversation!</p>
             </div>
           )}
           
-          <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} tabIndex={-1} aria-hidden="true" />
         </div>
         
         {/* Message Input */}
