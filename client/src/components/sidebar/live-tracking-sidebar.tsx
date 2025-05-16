@@ -44,8 +44,8 @@ export function LiveTrackingSidebar() {
         <AccordionItem value="live-tracking" className="border-none">
           <AccordionTrigger className="py-2 text-sm hover:no-underline text-white">
             <div className="flex items-center">
-              <Activity className="mr-2 h-4 w-4 text-blue-300" />
-              <span className="text-blue-100 font-medium">{t('tracking.title')}</span>
+              <Activity className="mr-2 h-4 w-4 text-green-400" />
+              <span className="text-green-300 font-medium">{t('tracking.title')}</span>
               {activeItems.length > 0 && (
                 <Badge 
                   variant="outline" 
@@ -62,28 +62,7 @@ export function LiveTrackingSidebar() {
             </div>
           </AccordionTrigger>
           <AccordionContent className="pb-1 pt-1 bg-blue-700 rounded-md mx-1 shadow-inner" style={{ boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)' }}>
-            {/* Search Input */}
-            <div className="mb-2 px-1">
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-300" />
-                <Input
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder={t('tracking.searchPlaceholder') || "Search tracking items..."}
-                  className="h-8 w-full pl-8 text-xs bg-blue-800 border-blue-600 text-white placeholder:text-blue-300"
-                />
-                {searchTerm && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-2 py-0 text-blue-300 hover:text-white hover:bg-transparent"
-                    onClick={() => setSearchTerm('')}
-                  >
-                    ×
-                  </Button>
-                )}
-              </div>
-            </div>
+            {/* Search bar removed as requested */}
             
             {isLoading ? (
               <div className="flex items-center justify-center py-4">

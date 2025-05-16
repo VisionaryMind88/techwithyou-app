@@ -209,9 +209,9 @@ export function Sidebar({ isMobile = false, onClose, userRole }: SidebarProps & 
         </motion.ul>
       </motion.nav>
       
-      {/* Logout Button */}
+      {/* Footer - changed from absolute to sticky positioning */}
       <motion.div 
-        className="absolute bottom-0 w-full p-4 border-t border-blue-500"
+        className="sticky bottom-0 w-full p-4 border-t border-blue-500 bg-blue-600 mt-auto"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}

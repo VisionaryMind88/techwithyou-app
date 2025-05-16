@@ -325,7 +325,7 @@ export default function AdminDashboard() {
                 <Menu className="h-6 w-6 text-gray-600" />
               </button>
               
-              <h1 className="text-xl font-semibold text-gray-800 md:ml-2">Admin Dashboard</h1>
+              <h1 className="text-xl font-semibold text-gray-800 md:ml-2">{t('dashboard.adminTitle') || "Admin Dashboard"}</h1>
               
               {/* Right Nav Elements */}
               <div className="flex items-center space-x-4">
@@ -385,7 +385,7 @@ export default function AdminDashboard() {
           <div className="px-4 py-6 md:px-6 pb-16">
             {/* Analytics Overview */}
             <div className="mb-6" id="stats-section">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4" id="admin-dashboard-welcome">Analytics Overview</h2>
+              <h2 className="text-xl font-semibold text-gray-800 mb-4" id="admin-dashboard-welcome">{t('dashboard.analyticsOverview') || "Analytics Overview"}</h2>
               <AdminDashboardStats 
                 stats={stats} 
                 isLoading={isLoadingProjects}
