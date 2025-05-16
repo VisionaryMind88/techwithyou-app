@@ -9,6 +9,7 @@ import { AnimatedIcon } from "./ui/animated-components";
 import { staggerContainer, staggerItem } from "@/lib/animation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LanguageSwitcher } from "./language-switcher";
+import { NotificationBell } from "./notification-bell";
 
 interface SidebarProps {
   isMobile?: boolean;
@@ -78,35 +79,46 @@ export function Sidebar({ isMobile = false, onClose, userRole }: SidebarProps & 
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <div className="flex items-center">
-          <Link to="/settings" className="cursor-pointer">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <Link to="/settings" className="cursor-pointer">
+              <motion.div 
+                className="w-10 h-10 rounded-full bg-blue-300 flex items-center justify-center text-blue-800 font-semibold overflow-hidden"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.2 }}
+              >
+                {user?.profilePicture ? (
+                  <img 
+                    src={user.profilePicture} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  user?.firstName?.[0] || 'U'
+                )}
+              </motion.div>
+            </Link>
             <motion.div 
-              className="w-10 h-10 rounded-full bg-blue-300 flex items-center justify-center text-blue-800 font-semibold overflow-hidden"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.2 }}
+              className="ml-3"
+              initial={{ opacity: 0, x: -5 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
             >
-              {user?.profilePicture ? (
-                <img 
-                  src={user.profilePicture} 
-                  alt="Profile" 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                user?.firstName?.[0] || 'U'
-              )}
+              <p className="font-medium text-white">{user?.firstName} {user?.lastName}</p>
+              <p className="text-xs text-blue-200">{user?.email}</p>
             </motion.div>
-          </Link>
-          <motion.div 
-            className="ml-3"
-            initial={{ opacity: 0, x: -5 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
+          </div>
+          
+          {/* Notification Bell */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.4 }}
           >
-            <p className="font-medium text-white">{user?.firstName} {user?.lastName}</p>
-            <p className="text-xs text-blue-200">{user?.email}</p>
+            <NotificationBell />
           </motion.div>
         </div>
       </motion.div>
