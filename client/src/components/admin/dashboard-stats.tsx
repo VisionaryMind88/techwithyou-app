@@ -15,7 +15,7 @@ interface StatItem {
     isPositive: boolean;
     period: string;
   };
-  description?: string; // Added for more detailed accessibility description
+  description?: string;
 }
 
 interface AdminDashboardStatsProps {
@@ -26,65 +26,54 @@ interface AdminDashboardStatsProps {
     unreadMessages: StatItem;
   };
   isLoading?: boolean;
-  reducedMotion?: boolean; // For users who prefer reduced motion
+  reducedMotion?: boolean;
 }
 
-export function AdminDashboardStats({ 
-  stats, 
-  isLoading = false,
-  reducedMotion = false
-}: AdminDashboardStatsProps) {
+// Loading skeleton component
+function StatsSkeleton() {
+  return (
+    <div 
+      className="grid grid-cols-1 md:grid-cols-4 gap-6" 
+      role="status" 
+      aria-live="polite"
+      aria-busy="true"
+      aria-label="Loading dashboard statistics"
+    >
+      <div className="sr-only">Loading dashboard statistics</div>
+      {[...Array(4)].map((_, i) => (
+        <div 
+          key={i} 
+          className="bg-white p-6 rounded-lg shadow-sm animate-pulse"
+          aria-hidden="true"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+              <div className="h-6 bg-gray-200 rounded w-16"></div>
+            </div>
+            <div className="p-3 rounded-full bg-gray-200 h-10 w-10"></div>
+          </div>
+          <div className="mt-2 flex items-center text-sm">
+            <div className="h-3 bg-gray-200 rounded w-32"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function AdminDashboardStats({ stats, isLoading = false, reducedMotion = false }: AdminDashboardStatsProps) {
+  // Hooks first, always in the same order
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-  
-  // Handle keyboard navigation between stat cards
-  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-      e.preventDefault();
-      const nextIndex = (index + 1) % cardRefs.current.length;
-      cardRefs.current[nextIndex]?.focus();
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      const prevIndex = (index - 1 + cardRefs.current.length) % cardRefs.current.length;
-      cardRefs.current[prevIndex]?.focus();
-    }
-  };
 
-  // Loading skeleton with ARIA-live and proper role attributes
+  // Handle loading state
   if (isLoading) {
-    return (
-      <div 
-        className="grid grid-cols-1 md:grid-cols-4 gap-6" 
-        role="status" 
-        aria-live="polite"
-        aria-busy="true"
-        aria-label="Loading dashboard statistics"
-      >
-        <div className="sr-only">Loading dashboard statistics</div>
-        {[...Array(4)].map((_, i) => (
-          <div 
-            key={i} 
-            className="bg-white p-6 rounded-lg shadow-sm animate-pulse"
-            aria-hidden="true"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
-                <div className="h-6 bg-gray-200 rounded w-16"></div>
-              </div>
-              <div className="p-3 rounded-full bg-gray-200 h-10 w-10"></div>
-            </div>
-            <div className="mt-2 flex items-center text-sm">
-              <div className="h-3 bg-gray-200 rounded w-32"></div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
+    return <StatsSkeleton />;
   }
 
   // Default stats if not provided
-  const defaultStats: AdminDashboardStatsProps["stats"] = {
+  const defaultStats = {
     totalProjects: {
       label: "Total Projects",
       value: 0,
@@ -149,7 +138,20 @@ export function AdminDashboardStats({
 
   // Create array of stat items for rendering
   const statItems = Object.values(mergedStats);
-  
+
+  // Handle keyboard navigation between stat cards
+  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const nextIndex = (index + 1) % cardRefs.current.length;
+      cardRefs.current[nextIndex]?.focus();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prevIndex = (index - 1 + cardRefs.current.length) % cardRefs.current.length;
+      cardRefs.current[prevIndex]?.focus();
+    }
+  };
+
   // Help screen readers announce changes to stats
   useEffect(() => {
     const statsDescription = statItems.map(stat => 
