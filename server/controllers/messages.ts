@@ -3,7 +3,7 @@ import { storage } from "../storage";
 import { insertMessageSchema, activities } from "@shared/schema";
 import { AuthRequest } from "../middleware/auth";
 import { db } from "../db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, or } from "drizzle-orm";
 
 export function registerMessageRoutes(app: Express) {
   // Get recent activities for the current user
@@ -416,6 +416,143 @@ export function registerMessageRoutes(app: Express) {
       res.json(updatedMessage);
     } catch (error) {
       console.error('Mark message as read error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get direct messages between users
+  app.get("/api/messages/direct/:userId", async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
+      const targetUserId = parseInt(req.params.userId);
+      
+      if (isNaN(targetUserId)) {
+        return res.status(400).json({ message: 'Invalid user ID' });
+      }
+      
+      // Get target user to ensure they exist
+      const targetUser = await storage.getUser(targetUserId);
+      
+      if (!targetUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      // Get direct messages from database
+      // For direct messages, we use projectId=0 and check recipientId
+      // We need messages in both directions (current user to target and target to current)
+      const directMessages = await db.query.messages.findMany({
+        where: or(
+          and(
+            eq(messages.senderId, req.user.id),
+            eq(messages.recipientId, targetUserId),
+            eq(messages.projectId, 0)
+          ),
+          and(
+            eq(messages.senderId, targetUserId),
+            eq(messages.recipientId, req.user.id),
+            eq(messages.projectId, 0)
+          )
+        ),
+        orderBy: [desc(messages.createdAt)]
+      });
+      
+      // Enrich messages with sender data
+      const enrichedMessages = await Promise.all(directMessages.map(async (message) => {
+        const sender = await storage.getUser(message.senderId);
+        return {
+          ...message,
+          sender: sender ? {
+            id: sender.id,
+            email: sender.email,
+            firstName: sender.firstName,
+            lastName: sender.lastName,
+            role: sender.role
+          } : null
+        };
+      }));
+      
+      // Sort messages by date (oldest first)
+      const sortedMessages = enrichedMessages.sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0);
+        const dateB = new Date(b.createdAt || 0);
+        return dateA.getTime() - dateB.getTime();
+      });
+      
+      res.json(sortedMessages);
+    } catch (error) {
+      console.error('Get direct messages error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Send direct message to a user
+  app.post("/api/messages/direct", async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
+      // Validate message data - with recipientId instead of projectId validation
+      const { content, recipientId } = req.body;
+      
+      if (!content || !recipientId) {
+        return res.status(400).json({ message: 'Message content and recipient ID are required' });
+      }
+      
+      // Check if recipient exists
+      const recipient = await storage.getUser(recipientId);
+      
+      if (!recipient) {
+        return res.status(404).json({ message: 'Recipient not found' });
+      }
+      
+      // For direct messages, we use projectId=0
+      const messageData = {
+        content,
+        projectId: 0, // 0 indicates a direct message
+        senderId: req.user.id,
+        recipientId, // Store the recipient ID
+        attachments: null
+      };
+      
+      // Create the message
+      const newMessage = await storage.createMessage(messageData);
+      
+      // Create a notification activity for the recipient
+      try {
+        await storage.createActivity({
+          type: 'direct_message_received',
+          description: `New direct message from ${req.user.firstName || req.user.email}`,
+          userId: recipientId,
+          projectId: null,
+          isRead: false,
+          referenceId: newMessage.id,
+          referenceType: 'message',
+          metadata: { senderId: req.user.id }
+        });
+      } catch (activityError) {
+        console.error('Error creating direct message activity:', activityError);
+        // Don't fail the whole request if activity creation fails
+      }
+      
+      // Include sender info in response
+      const messageWithSender = {
+        ...newMessage,
+        sender: {
+          id: req.user.id,
+          email: req.user.email,
+          firstName: req.user.firstName,
+          lastName: req.user.lastName,
+          role: req.user.role
+        }
+      };
+      
+      res.status(201).json(messageWithSender);
+    } catch (error) {
+      console.error('Create direct message error:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   });
