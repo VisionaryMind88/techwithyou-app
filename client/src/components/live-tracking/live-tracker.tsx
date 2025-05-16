@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -74,6 +75,7 @@ interface TrackingItemFormData {
 
 export function LiveTracker() {
   const { user, isAuthenticated } = useAuth();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("all");
@@ -252,7 +254,7 @@ export function LiveTracker() {
   if (user?.role !== "admin") {
     return (
       <div className="p-6 text-center">
-        <p className="text-muted-foreground">You don't have permission to access this page.</p>
+        <p className="text-muted-foreground">{t('tracking.noPermission') || "You don't have permission to access this page."}</p>
       </div>
     );
   }
@@ -260,12 +262,12 @@ export function LiveTracker() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Live Tracking Management</h2>
+        <h2 className="text-2xl font-bold">{t('tracking.manageTitle') || "Live Tracking Management"}</h2>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-1">
+            <Button className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700">
               <Plus className="h-4 w-4" />
-              <span>Add New</span>
+              <span>{t('tracking.addNew') || "Add New"}</span>
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -363,10 +365,10 @@ export function LiveTracker() {
       </div>
 
       <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="active">Active</TabsTrigger>
-          <TabsTrigger value="inactive">Inactive</TabsTrigger>
+        <TabsList className="bg-blue-50">
+          <TabsTrigger value="all" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">{t('tracking.all') || "All"}</TabsTrigger>
+          <TabsTrigger value="active" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">{t('tracking.active') || "Active"}</TabsTrigger>
+          <TabsTrigger value="inactive" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">{t('tracking.inactive') || "Inactive"}</TabsTrigger>
         </TabsList>
         <TabsContent value="all" className="mt-4">
           {renderTrackingItemsTable(filteredItems)}
@@ -505,7 +507,7 @@ export function LiveTracker() {
     if (isFetching) {
       return (
         <div className="flex items-center justify-center py-12">
-          <CircleDashed className="h-8 w-8 animate-spin text-primary" />
+          <CircleDashed className="h-8 w-8 animate-spin text-blue-600" />
         </div>
       );
     }
@@ -513,21 +515,21 @@ export function LiveTracker() {
     if (items.length === 0) {
       return (
         <div className="text-center py-8">
-          <p className="text-muted-foreground">No tracking items found.</p>
+          <p className="text-muted-foreground">{t('tracking.noItems') || "No tracking items found."}</p>
         </div>
       );
     }
 
     return (
-      <div className="rounded-md border">
+      <div className="rounded-md border border-blue-100">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-blue-50">
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>URL</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>{t('tracking.tableName') || "Name"}</TableHead>
+              <TableHead>{t('tracking.tableType') || "Type"}</TableHead>
+              <TableHead>{t('tracking.tableUrl') || "URL"}</TableHead>
+              <TableHead>{t('tracking.tableStatus') || "Status"}</TableHead>
+              <TableHead className="text-right">{t('tracking.tableActions') || "Actions"}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -569,9 +571,12 @@ export function LiveTracker() {
                       checked={item.isActive}
                       onCheckedChange={() => handleToggleStatus(item.id)}
                       disabled={toggleStatusMutation.isPending}
+                      className="data-[state=checked]:bg-blue-600"
                     />
-                    <span className={item.isActive ? "text-green-600" : "text-muted-foreground"}>
-                      {item.isActive ? "Active" : "Inactive"}
+                    <span className={item.isActive ? "text-blue-600 font-medium" : "text-muted-foreground"}>
+                      {item.isActive 
+                        ? t('tracking.active') || "Active" 
+                        : t('tracking.inactive') || "Inactive"}
                     </span>
                   </div>
                 </TableCell>
@@ -581,9 +586,10 @@ export function LiveTracker() {
                       size="icon"
                       variant="ghost"
                       onClick={() => handleEditClick(item)}
+                      className="hover:text-blue-600 hover:bg-blue-50"
                     >
                       <Pencil className="h-4 w-4" />
-                      <span className="sr-only">Edit</span>
+                      <span className="sr-only">{t('tracking.edit') || "Edit"}</span>
                     </Button>
                     <Button
                       size="icon"
@@ -592,7 +598,7 @@ export function LiveTracker() {
                       onClick={() => setDeleteItemId(item.id)}
                     >
                       <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Delete</span>
+                      <span className="sr-only">{t('tracking.delete') || "Delete"}</span>
                     </Button>
                   </div>
                 </TableCell>
