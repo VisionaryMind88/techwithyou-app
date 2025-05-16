@@ -247,7 +247,33 @@ export function registerAuthRoutes(app: Express) {
     }
   });
 
-  // Get current user
+  // Get all users (admin only)
+  app.get("/api/users/admin", async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
+      }
+      
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      const users = await storage.getAllUsers();
+      
+      // Remove sensitive information like passwords
+      const sanitizedUsers = users.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
+      
+      res.json(sanitizedUsers);
+    } catch (error) {
+      console.error('Get all users error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+// Get current user
   app.get("/api/auth/user", async (req: AuthRequest, res: Response) => {
     try {
       console.log('GET /api/auth/user route accessed, session details:', {

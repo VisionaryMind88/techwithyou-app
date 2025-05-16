@@ -24,6 +24,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByRememberToken(token: string): Promise<User[]>;
+  getAllUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
   
@@ -73,6 +74,10 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(eq(users.rememberToken, token));
     return foundUsers;
+  }
+  
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
   }
 
   async createUser(user: InsertUser): Promise<User> {
