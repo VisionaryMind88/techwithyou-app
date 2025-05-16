@@ -140,7 +140,7 @@ export default function CustomerDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-16 md:pb-0">
       <div className="flex">
         {/* Sidebar - Desktop */}
         <div className="hidden md:block fixed inset-y-0 left-0 z-10">
@@ -162,16 +162,19 @@ export default function CustomerDashboard() {
 
         {/* Main Content */}
         <main className="flex-1 md:ml-64">
-          {/* Top Navigation */}
-          <header className="bg-white shadow-sm z-10">
+          {/* Mobile Header */}
+          <MobileHeader 
+            title="Dashboard"
+            onMenuClick={() => setIsMobileSidebarOpen(true)}
+            onNotificationsClick={() => setIsNotificationsOpen(prev => !prev)}
+            unreadNotifications={activities.filter(a => !a.isRead).length}
+            unreadMessages={messages.filter(m => !m.isRead).length}
+            onMessagesClick={() => {/* Handle messages click */}}
+          />
+          
+          {/* Desktop Header - Only visible on md screens and up */}
+          <header className="bg-white shadow-sm z-10 hidden md:block">
             <div className="flex items-center justify-between h-16 px-4 md:px-6">
-              <button 
-                className="md:hidden"
-                onClick={() => setIsMobileSidebarOpen(true)}
-              >
-                <Menu className="h-6 w-6 text-gray-600" />
-              </button>
-              
               <h1 className="text-xl font-semibold text-gray-800 md:ml-2">Customer Dashboard</h1>
               
               {/* Right Nav Elements */}
@@ -586,6 +589,9 @@ export default function CustomerDashboard() {
         }}
         userRole="customer"
       />
+      
+      {/* Mobile Bottom Navigation */}
+      <BottomNavigation />
     </div>
   );
 }
