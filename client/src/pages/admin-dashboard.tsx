@@ -25,6 +25,10 @@ import { MobileHeader } from "@/components/mobile/mobile-header";
 import { BottomNavigation } from "@/components/mobile/bottom-navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
+import { motion } from "framer-motion";
+import { PageTransition } from "@/components/ui/page-transition";
+import { AnimatedButton, AnimatedCard, AnimatedIcon } from "@/components/ui/animated-components";
+import { staggerContainer, staggerItem, fadeIn, slideIn, buttonHover } from "@/lib/animation";
 
 // Enhanced Activity interface that matches our extended schema
 interface Activity extends Omit<BaseActivity, 'referenceId' | 'referenceType' | 'isRead' | 'createdAt'> {
