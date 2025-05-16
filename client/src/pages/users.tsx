@@ -424,6 +424,18 @@ export default function UsersPage() {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* User Detail Dialog */}
+      {selectedUser && (
+        <UserDetailDialog 
+          user={selectedUser}
+          isOpen={isViewingUserDetails}
+          onClose={() => {
+            setIsViewingUserDetails(false);
+            setSelectedUser(null);
+          }}
+        />
+      )}
     </div>
   );
 }
