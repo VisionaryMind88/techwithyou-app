@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { PaymentCheckout } from "@/components/checkout";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
+import { useRouter } from "wouter";
+import { DollarSign, Check, X, CreditCard } from "lucide-react";
 
 type PaymentRequestProps = {
   messageId: number;
@@ -22,64 +22,66 @@ export function PaymentRequest({
   projectId, 
   amount, 
   description, 
-  status,
-  paymentId
+  status, 
+  paymentId 
 }: PaymentRequestProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState(status);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const [, navigate] = useRouter();
 
-  const handlePaymentSuccess = async () => {
-    // Close payment dialog
-    setIsOpen(false);
-    
-    // Show success message
-    toast({
-      title: "Payment Initiated",
-      description: "Your payment is being processed. You'll be redirected to the payment success page shortly.",
-    });
-    
-    // Invalidate queries to refresh the data
-    queryClient.invalidateQueries({ queryKey: ["/api/messages/project", projectId] });
-    queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(value);
   };
 
-  const handleCancelRequest = async () => {
-    if (!paymentId) {
-      toast({
-        title: "Cannot Cancel",
-        description: "Payment ID not found. Please contact support.",
-        variant: "destructive",
-      });
-      return;
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "failed":
+        return "bg-red-100 text-red-800";
+      case "canceled":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
+  };
+
+  const handlePayNow = async () => {
+    setIsLoading(true);
 
     try {
-      setIsLoading(true);
-      const response = await apiRequest("PATCH", `/api/payments/${paymentId}/status`, {
-        status: "canceled"
+      const response = await apiRequest("POST", "/api/payment-intent", {
+        amount,
+        description,
+        projectId,
+        messageId,
+        paymentId,
       });
-      
-      if (response.ok) {
-        toast({
-          title: "Payment Request Canceled",
-          description: "The payment request has been canceled successfully."
-        });
-        
-        // Invalidate queries to refresh the data
-        queryClient.invalidateQueries({ queryKey: ["/api/messages/project", projectId] });
-      } else {
-        const data = await response.json();
-        toast({
-          title: "Error",
-          description: data.message || "Failed to cancel payment request",
-          variant: "destructive",
-        });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to create payment");
       }
+
+      const { clientSecret, paymentId: newPaymentId } = await response.json();
+
+      // Store the payment ID in session storage to reference after payment completion
+      sessionStorage.setItem('currentPaymentId', newPaymentId.toString());
+      sessionStorage.setItem('paymentAmount', amount.toString());
+      sessionStorage.setItem('paymentDescription', description);
+
+      // Navigate to payment page
+      navigate(`/payment-checkout?clientSecret=${clientSecret}`);
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "An error occurred",
+        description: error.message || "There was an error processing your payment.",
         variant: "destructive",
       });
     } finally {
@@ -87,61 +89,86 @@ export function PaymentRequest({
     }
   };
 
-  // Status indicator color
-  const statusColor = {
-    pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
-    completed: "bg-green-100 text-green-800 border-green-300",
-    failed: "bg-red-100 text-red-800 border-red-300",
-    canceled: "bg-gray-100 text-gray-800 border-gray-300"
+  const handleCancel = async () => {
+    if (!paymentId) return;
+
+    setIsLoading(true);
+    
+    try {
+      const response = await apiRequest("PATCH", `/api/payments/${paymentId}/status`, {
+        status: "canceled",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to cancel payment");
+      }
+      
+      setCurrentStatus("canceled");
+      toast({
+        title: "Payment Canceled",
+        description: "The payment request has been canceled.",
+      });
+      
+      // Invalidate queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ["/api/messages/project", projectId] });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to cancel payment",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <>
-      <Card className="mt-2 mb-2 border border-muted">
-        <CardHeader className="pb-2 pt-4">
-          <div className="flex items-center justify-between">
+    <Card className="mt-2 w-full">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <DollarSign className="h-5 w-5 text-primary mr-2" />
             <CardTitle className="text-base">Payment Request</CardTitle>
-            <Badge className={statusColor[status]}>{status}</Badge>
           </div>
-          <CardDescription>{description}</CardDescription>
-        </CardHeader>
-        <CardContent className="pb-2">
-          <div className="text-xl font-bold">${amount.toFixed(2)}</div>
-        </CardContent>
-        <CardFooter className="pt-0 pb-3 flex justify-end gap-2">
-          {status === "pending" && (
-            <>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleCancelRequest}
-                disabled={isLoading}
-              >
-                {isLoading ? "Processing..." : "Cancel"}
-              </Button>
-              <Button 
-                size="sm" 
-                onClick={() => setIsOpen(true)}
-              >
-                Pay Now
-              </Button>
-            </>
-          )}
+          <Badge className={getStatusColor(currentStatus)}>
+            {currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)}
+          </Badge>
+        </div>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent className="pb-4">
+        <p className="text-xl font-bold">{formatCurrency(amount)}</p>
+      </CardContent>
+      {currentStatus === "pending" && (
+        <CardFooter className="pt-0 flex justify-end gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleCancel}
+            disabled={isLoading}
+          >
+            <X className="h-4 w-4 mr-1" />
+            Decline
+          </Button>
+          <Button 
+            size="sm" 
+            onClick={handlePayNow}
+            disabled={isLoading}
+          >
+            <CreditCard className="h-4 w-4 mr-1" />
+            Pay Now
+          </Button>
         </CardFooter>
-      </Card>
-
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md">
-          <PaymentCheckout
-            paymentId={paymentId || 0}
-            amount={amount}
-            description={description}
-            projectId={projectId}
-            onClose={() => setIsOpen(false)}
-            onSuccess={handlePaymentSuccess}
-          />
-        </DialogContent>
-      </Dialog>
-    </>
+      )}
+      {currentStatus === "completed" && (
+        <CardFooter className="pt-0 flex justify-end">
+          <div className="flex items-center text-green-600">
+            <Check className="h-4 w-4 mr-1" />
+            <span className="text-sm">Paid</span>
+          </div>
+        </CardFooter>
+      )}
+    </Card>
   );
 }

@@ -1,27 +1,44 @@
 import { useState } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
-import { queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
-// Form schema and validation
+// Define the zod schema for form validation
 const paymentRequestSchema = z.object({
   amount: z.preprocess(
-    (a) => parseFloat(a as string), 
-    z.number().positive("Amount must be positive").min(0.01, "Minimum amount is $0.01")
+    (val) => parseFloat(val as string),
+    z.number().positive({ message: "Amount must be a positive number" })
   ),
-  projectId: z.string().min(1, "Project is required"),
-  userId: z.string().min(1, "User is required"),
-  description: z.string().min(5, "Description is required").max(200, "Description is too long"),
-  messageContent: z.string().min(5, "Message content is required").max(500, "Message is too long"),
+  projectId: z.preprocess(
+    (val) => parseInt(val as string, 10),
+    z.number({ message: "Project is required" })
+  ),
+  userId: z.preprocess(
+    (val) => parseInt(val as string, 10),
+    z.number({ message: "Customer is required" })
+  ),
+  description: z.string().min(5, { message: "Description is required (min 5 characters)" }),
+  messageContent: z.string().optional(),
 });
 
 type PaymentRequestForm = z.infer<typeof paymentRequestSchema>;
@@ -54,59 +71,38 @@ export function PaymentRequestForm({
 }: PaymentRequestFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  
+
   const form = useForm<PaymentRequestForm>({
     resolver: zodResolver(paymentRequestSchema),
     defaultValues: {
       amount: undefined,
-      projectId: "",
-      userId: "",
+      projectId: undefined,
+      userId: undefined,
       description: "",
-      messageContent: "Please review the following payment request:",
+      messageContent: "",
     },
   });
-
-  const usersByProject = projects.reduce<Record<number, number>>((acc, project) => {
-    acc[project.id] = project.userId;
-    return acc;
-  }, {});
-
-  const handleSelectProject = (projectId: string) => {
-    // When project is selected, auto-select the user if there's only one associated
-    const userId = usersByProject[parseInt(projectId)];
-    if (userId) {
-      form.setValue("userId", userId.toString());
-    }
-  };
 
   const onSubmit = async (data: PaymentRequestForm) => {
     setIsSubmitting(true);
     
     try {
-      const response = await apiRequest("POST", "/api/payment-requests", {
-        amount: parseFloat(data.amount.toString()),
-        projectId: parseInt(data.projectId),
-        userId: parseInt(data.userId),
-        description: data.description,
-        messageContent: data.messageContent,
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to create payment request");
+      // Set default message content if not provided
+      if (!data.messageContent) {
+        data.messageContent = `Payment Request: $${data.amount} - ${data.description}`;
       }
       
-      // Successfully created payment request
-      const result = await response.json();
+      const response = await apiRequest("POST", "/api/payment-requests", data);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create payment request");
+      }
       
       toast({
-        title: "Payment Request Sent",
-        description: "The payment request has been sent to the customer.",
+        title: "Success!",
+        description: "Payment request has been created and sent to the customer.",
       });
-      
-      // Invalidate queries to refresh the data
-      queryClient.invalidateQueries({ queryKey: ["/api/messages/recent"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/payments/admin"] });
       
       if (onSuccess) {
         onSuccess();
@@ -121,151 +117,134 @@ export function PaymentRequestForm({
       setIsSubmitting(false);
     }
   };
+  
+  // Filter users to only show customers
+  const customerUsers = users.filter(user => user.role === 'customer' || user.role === 'user');
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Create Payment Request</CardTitle>
-      </CardHeader>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="projectId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Project</FormLabel>
-                  <Select 
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      handleSelectProject(value);
-                    }}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select project" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {projects.map((project) => (
-                        <SelectItem key={project.id} value={project.id.toString()}>
-                          {project.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="userId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Customer</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select customer" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {users
-                        .filter(user => user.id !== 1) // Exclude admin user
-                        .map((user) => (
-                          <SelectItem key={user.id} value={user.id.toString()}>
-                            {user.firstName} {user.lastName} ({user.email})
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Amount ($)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      placeholder="0.00"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Payment Description</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g., Project milestone payment"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="messageContent"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Message</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Message to the customer"
-                      className="min-h-[100px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            {onCancel && (
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={onCancel}
-                disabled={isSubmitting}
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="amount"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Amount ($)</FormLabel>
+              <FormControl>
+                <Input 
+                  type="number" 
+                  placeholder="0.00" 
+                  step="0.01" 
+                  min="0.01"
+                  {...field} 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="projectId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Project</FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value?.toString()}
               >
-                Cancel
-              </Button>
-            )}
-            <Button 
-              type="submit" 
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Sending..." : "Send Payment Request"}
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a project" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id.toString()}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="userId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Customer</FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value?.toString()}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a customer" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {customerUsers.map((user) => (
+                    <SelectItem key={user.id} value={user.id.toString()}>
+                      {user.firstName || user.email} {user.lastName || ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Describe what this payment is for..."
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="messageContent"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Message (Optional)</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Custom message to send with the payment request. If left blank, a default message will be generated."
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <div className="flex justify-end space-x-2 pt-2">
+          {onCancel && (
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
             </Button>
-          </CardFooter>
-        </form>
-      </Form>
-    </Card>
+          )}
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Create Payment Request"}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 }

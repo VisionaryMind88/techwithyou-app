@@ -102,44 +102,6 @@ export function PaymentTab() {
     queryKey: ["/api/payments/admin"],
   });
 
-  const form = useForm<PaymentFormValues>({
-    resolver: zodResolver(paymentFormSchema),
-    defaultValues: {
-      amount: "",
-      projectId: "",
-      userId: "",
-      description: "",
-    },
-  });
-
-  // Create payment mutation
-  const createPaymentMutation = useMutation({
-    mutationFn: async (data: PaymentFormValues) => {
-      return await apiRequest("POST", "/api/payments", {
-        amount: parseFloat(data.amount),
-        projectId: parseInt(data.projectId),
-        userId: parseInt(data.userId),
-        description: data.description,
-      });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Payment request created",
-        description: "The payment request has been sent to the customer.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/payments/admin"] });
-      setIsNewPaymentOpen(false);
-      form.reset();
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error creating payment request",
-        description: error.message || "There was an error creating the payment request.",
-        variant: "destructive",
-      });
-    },
-  });
-
   // Update payment status mutation
   const updatePaymentStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
@@ -160,10 +122,6 @@ export function PaymentTab() {
       });
     },
   });
-
-  const onSubmit = (values: PaymentFormValues) => {
-    createPaymentMutation.mutate(values);
-  };
 
   // Payment stats calculation
   const getPaymentStats = () => {
@@ -210,110 +168,27 @@ export function PaymentTab() {
               New Payment Request
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Create New Payment Request</DialogTitle>
               <DialogDescription>
-                Create a payment request that will be sent to the customer.
+                Create a payment request that will be sent to the customer via chat message.
               </DialogDescription>
             </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="amount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Amount ($)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="0.00" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="projectId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Project</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a project" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {projectsData?.projects?.map((project: any) => (
-                            <SelectItem key={project.id} value={project.id.toString()}>
-                              {project.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="userId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Customer</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a customer" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {usersData?.users
-                            ?.filter((user: any) => user.role === "customer")
-                            .map((user: any) => (
-                              <SelectItem key={user.id} value={user.id.toString()}>
-                                {user.firstName} {user.lastName}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Describe what this payment is for..."
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <DialogFooter>
-                  <Button
-                    type="submit"
-                    disabled={createPaymentMutation.isPending}
-                  >
-                    {createPaymentMutation.isPending ? "Creating..." : "Create Request"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
+            <PaymentRequestForm 
+              projects={projectsData?.projects || []}
+              users={usersData?.users || []}
+              onSuccess={() => {
+                setIsNewPaymentOpen(false);
+                toast({
+                  title: "Payment Request Sent",
+                  description: "The payment request has been sent to the customer.",
+                });
+                // Refresh data
+                queryClient.invalidateQueries({ queryKey: ["/api/payments/admin"] });
+              }}
+              onCancel={() => setIsNewPaymentOpen(false)}
+            />
           </DialogContent>
         </Dialog>
       </div>
